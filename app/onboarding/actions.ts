@@ -59,6 +59,8 @@ export async function saveDiagnostic(formData: FormData) {
     : null
   const goal_3months = (formData.get('goal_3months') as string) || null
 
+  const returnTo = (formData.get('returnTo') as string) || null
+
   const { error } = await supabase.from('user_snapshot').upsert({
     user_id: user.id,
     age,
@@ -73,7 +75,7 @@ export async function saveDiagnostic(formData: FormData) {
 
   if (error) return { error: error.message }
 
-  redirect('/onboarding/first-mission')
+  redirect(returnTo ?? '/onboarding/first-mission')
 }
 
 // ============================================================

@@ -29,27 +29,40 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
+  const { pathname } = request.nextUrl
   const protectedPaths = ['/today', '/path', '/legend', '/profile', '/onboarding']
-  const isProtected = protectedPaths.some((p) =>
-    request.nextUrl.pathname.startsWith(p)
-  )
+  const appPaths = ['/today', '/path', '/legend', '/profile']
 
+  const isProtected = protectedPaths.some((p) => pathname.startsWith(p))
+  const isAppPath = appPaths.some((p) => pathname.startsWith(p))
+
+  // 1. Не авторизован → /auth
   if (!user && isProtected) {
     const url = request.nextUrl.clone()
     url.pathname = '/auth'
     return NextResponse.redirect(url)
   }
 
-  if (user && request.nextUrl.pathname === '/auth') {
+  // 2. Авторизован на /auth или на страницах приложения → проверяем onboarding_done
+  if (user && (pathname === '/auth' || isAppPath)) {
     const { data: userData } = await supabase
       .from('users')
       .select('onboarding_done')
       .eq('id', user.id)
       .single()
 
-    const url = request.nextUrl.clone()
-    url.pathname = userData?.onboarding_done ? '/today' : '/onboarding/welcome'
-    return NextResponse.redirect(url)
+    if (pathname === '/auth') {
+      const url = request.nextUrl.clone()
+      url.pathname = userData?.onboarding_done ? '/today' : '/onboarding/welcome'
+      return NextResponse.redirect(url)
+    }
+
+    // На страницах приложения: если онбординг не завершён → /onboarding/welcome
+    if (!userData?.onboarding_done) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/onboarding/welcome'
+      return NextResponse.redirect(url)
+    }
   }
 
   return supabaseResponse

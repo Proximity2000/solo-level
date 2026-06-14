@@ -165,11 +165,26 @@ export default async function LegendPage() {
                   padding: '16px',
                   border: '1px solid var(--border)',
                   textAlign: 'center',
-                  color: 'var(--muted)',
-                  fontSize: 14,
                 }}
               >
-                Точка старта не заполнена
+                <p style={{ color: 'var(--muted)', fontSize: 14, marginBottom: 12 }}>
+                  Точка старта не заполнена
+                </p>
+                <a
+                  href="/onboarding/diagnostic?returnTo=/legend"
+                  style={{
+                    display: 'inline-block',
+                    padding: '10px 20px',
+                    borderRadius: 10,
+                    background: 'var(--accent)',
+                    color: '#fff',
+                    fontSize: 14,
+                    fontWeight: 600,
+                    textDecoration: 'none',
+                  }}
+                >
+                  Заполнить точку старта
+                </a>
               </div>
             )}
           </div>
