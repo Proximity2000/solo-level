@@ -10,6 +10,12 @@ export async function GET(request: NextRequest) {
     const { error } = await supabase.auth.exchangeCodeForSession(code)
 
     if (!error) {
+      // Если есть next (например, /auth/reset-password после recovery) — редиректим туда
+      const next = searchParams.get('next')
+      if (next) {
+        return NextResponse.redirect(`${origin}${next}`)
+      }
+
       // Проверяем onboarding_done → редирект
       const {
         data: { user },

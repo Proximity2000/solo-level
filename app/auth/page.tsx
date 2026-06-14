@@ -2,17 +2,19 @@
 
 import { useState, useTransition } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { signInWithMagicLink, signInWithPassword, signUp } from './actions'
+import { signInWithPassword, signUp, sendPasswordReset } from './actions'
 
-type Mode = 'magic' | 'password' | 'register'
+type Mode = 'register' | 'login'
 
 export default function AuthPage() {
   const searchParams = useSearchParams()
   const hasError = searchParams.get('error')
 
-  const [mode, setMode] = useState<Mode>('magic')
+  const [mode, setMode] = useState<Mode>('register')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showReset, setShowReset] = useState(false)
+  const [resetEmail, setResetEmail] = useState('')
   const [message, setMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(
     hasError ? { type: 'error', text: 'Ошибка авторизации. Попробуй ещё раз.' } : null
   )
@@ -27,35 +29,54 @@ export default function AuthPage() {
     formData.set('password', password)
 
     startTransition(async () => {
-      let result: { error?: string; success?: boolean } | undefined
-
-      if (mode === 'magic') {
-        result = await signInWithMagicLink(formData)
-      } else if (mode === 'password') {
-        result = await signInWithPassword(formData)
-      } else {
-        result = await signUp(formData)
-      }
+      const result = mode === 'login'
+        ? await signInWithPassword(formData) as { error?: string; success?: boolean } | undefined
+        : await signUp(formData)
 
       if (result?.error) {
         setMessage({ type: 'error', text: result.error })
       } else if (result?.success) {
-        if (mode === 'magic') {
-          setMessage({
-            type: 'success',
-            text: 'Ссылка отправлена на почту. Проверь входящие.',
-          })
-        } else if (mode === 'register') {
-          setMessage({
-            type: 'success',
-            text: 'Проверь почту — мы отправили ссылку для подтверждения.',
-          })
-        }
+        // Только при register + email confirmation включён
+        setMessage({
+          type: 'success',
+          text: 'Проверь почту — мы отправили ссылку для подтверждения.',
+        })
       }
     })
   }
 
-  const isPasswordMode = mode === 'password' || mode === 'register'
+  function handleReset(e: React.FormEvent) {
+    e.preventDefault()
+    setMessage(null)
+
+    const formData = new FormData()
+    formData.set('email', resetEmail)
+
+    startTransition(async () => {
+      await sendPasswordReset(formData)
+      setMessage({
+        type: 'success',
+        text: 'Если аккаунт существует, мы отправили ссылку для восстановления пароля.',
+      })
+    })
+  }
+
+  function switchMode(m: Mode) {
+    setMode(m)
+    setMessage(null)
+    setShowReset(false)
+    setEmail('')
+    setPassword('')
+  }
+
+  const msgStyle = (type: 'error' | 'success') => ({
+    padding: '12px 14px',
+    borderRadius: 10,
+    fontSize: 14,
+    background: type === 'error' ? 'rgba(239,68,68,0.12)' : 'rgba(34,197,94,0.12)',
+    color: type === 'error' ? '#ef4444' : '#22c55e',
+    border: `1px solid ${type === 'error' ? 'rgba(239,68,68,0.25)' : 'rgba(34,197,94,0.25)'}`,
+  })
 
   return (
     <div className="app-shell">
@@ -71,14 +92,7 @@ export default function AuthPage() {
       >
         {/* Logo */}
         <div style={{ textAlign: 'center' }}>
-          <div
-            style={{
-              fontSize: 40,
-              marginBottom: 8,
-            }}
-          >
-            ⚔️
-          </div>
+          <div style={{ fontSize: 40, marginBottom: 8 }}>⚔️</div>
           <h1
             style={{
               fontSize: 28,
@@ -90,7 +104,7 @@ export default function AuthPage() {
             Solo Level
           </h1>
           <p style={{ color: 'var(--muted)', fontSize: 14, marginTop: 6 }}>
-            Прокачай себя. Каждый день.
+            Прокачивай себя каждый день
           </p>
         </div>
 
@@ -104,19 +118,13 @@ export default function AuthPage() {
             gap: 2,
           }}
         >
-          {(
-            [
-              { key: 'magic', label: 'Magic Link' },
-              { key: 'password', label: 'Войти' },
-              { key: 'register', label: 'Регистрация' },
-            ] as const
-          ).map((tab) => (
+          {([
+            { key: 'register', label: 'Регистрация' },
+            { key: 'login',    label: 'Войти' },
+          ] as const).map((tab) => (
             <button
               key={tab.key}
-              onClick={() => {
-                setMode(tab.key)
-                setMessage(null)
-              }}
+              onClick={() => switchMode(tab.key)}
               style={{
                 flex: 1,
                 padding: '8px 4px',
@@ -124,7 +132,7 @@ export default function AuthPage() {
                 border: 'none',
                 background: mode === tab.key ? 'var(--accent)' : 'transparent',
                 color: mode === tab.key ? '#fff' : 'var(--muted)',
-                fontSize: 12,
+                fontSize: 13,
                 fontWeight: 600,
                 cursor: 'pointer',
                 transition: 'all 0.15s ease',
@@ -135,43 +143,62 @@ export default function AuthPage() {
           ))}
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div>
-            <label
-              style={{
-                display: 'block',
-                fontSize: 13,
-                fontWeight: 500,
-                color: 'var(--muted)',
-                marginBottom: 6,
-              }}
-            >
-              Email
-            </label>
-            <input
-              className="input"
-              type="email"
-              placeholder="твой@email.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              autoComplete="email"
-              inputMode="email"
-            />
-          </div>
-
-          {isPasswordMode && (
+        {/* ── Форма восстановления пароля ── */}
+        {showReset ? (
+          <form onSubmit={handleReset} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <p style={{ fontSize: 14, color: 'var(--muted)', marginBottom: 4 }}>
+              Введи email, привязанный к аккаунту
+            </p>
             <div>
-              <label
-                style={{
-                  display: 'block',
-                  fontSize: 13,
-                  fontWeight: 500,
-                  color: 'var(--muted)',
-                  marginBottom: 6,
-                }}
-              >
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--muted)', marginBottom: 6 }}>
+                Email
+              </label>
+              <input
+                className="input"
+                type="email"
+                placeholder="твой@email.com"
+                value={resetEmail}
+                onChange={(e) => setResetEmail(e.target.value)}
+                required
+                autoComplete="email"
+                inputMode="email"
+              />
+            </div>
+
+            {message && <div style={msgStyle(message.type)}>{message.text}</div>}
+
+            <button className="btn btn-primary" type="submit" disabled={isPending} style={{ marginTop: 4 }}>
+              {isPending ? 'Отправка...' : 'Отправить ссылку для восстановления'}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setShowReset(false); setMessage(null) }}
+              style={{ background: 'none', border: 'none', color: 'var(--muted)', fontSize: 13, cursor: 'pointer', padding: '4px 0' }}
+            >
+              ← Назад
+            </button>
+          </form>
+        ) : (
+          /* ── Основная форма ── */
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--muted)', marginBottom: 6 }}>
+                Email
+              </label>
+              <input
+                className="input"
+                type="email"
+                placeholder="твой@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                autoComplete="email"
+                inputMode="email"
+              />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--muted)', marginBottom: 6 }}>
                 Пароль
               </label>
               <input
@@ -184,52 +211,49 @@ export default function AuthPage() {
                 autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
               />
             </div>
-          )}
 
-          {/* Message */}
-          {message && (
-            <div
-              style={{
-                padding: '12px 14px',
-                borderRadius: 10,
-                fontSize: 14,
-                background:
-                  message.type === 'error'
-                    ? 'rgba(239,68,68,0.12)'
-                    : 'rgba(34,197,94,0.12)',
-                color: message.type === 'error' ? '#ef4444' : '#22c55e',
-                border: `1px solid ${message.type === 'error' ? 'rgba(239,68,68,0.25)' : 'rgba(34,197,94,0.25)'}`,
-              }}
+            {/* Forgot password — только на вкладке Войти */}
+            {mode === 'login' && (
+              <button
+                type="button"
+                onClick={() => { setShowReset(true); setResetEmail(email); setMessage(null) }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--muted)',
+                  fontSize: 12,
+                  cursor: 'pointer',
+                  textAlign: 'right',
+                  padding: '0',
+                  textDecoration: 'underline',
+                  textUnderlineOffset: 3,
+                }}
+              >
+                Забыли пароль?
+              </button>
+            )}
+
+            {message && <div style={msgStyle(message.type)}>{message.text}</div>}
+
+            <button
+              className="btn btn-primary"
+              type="submit"
+              disabled={isPending}
+              style={{ marginTop: 4 }}
             >
-              {message.text}
-            </div>
-          )}
-
-          <button
-            className="btn btn-primary"
-            type="submit"
-            disabled={isPending}
-            style={{ marginTop: 4 }}
-          >
-            {isPending
-              ? 'Загрузка...'
-              : mode === 'magic'
-              ? 'Отправить ссылку'
-              : mode === 'register'
-              ? 'Создать аккаунт'
-              : 'Войти'}
-          </button>
-        </form>
+              {isPending ? 'Загрузка...' : mode === 'register' ? 'Создать аккаунт' : 'Войти'}
+            </button>
+          </form>
+        )}
 
         {/* Hint */}
-        <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--muted)', lineHeight: 1.6 }}>
-          {mode === 'magic' &&
-            'Мы отправим ссылку для входа без пароля.'}
-          {mode === 'password' &&
-            'Войди с email и паролем.'}
-          {mode === 'register' &&
-            'Создай аккаунт и начни прокачку.'}
-        </p>
+        {!showReset && (
+          <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--muted)', lineHeight: 1.6 }}>
+            {mode === 'register'
+              ? 'Создай аккаунт и начни прокачку.'
+              : 'Войди с email и паролем.'}
+          </p>
+        )}
       </div>
     </div>
   )
