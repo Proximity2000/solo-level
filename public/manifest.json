@@ -1,0 +1,10 @@
+{
+  "name": "Solo Level",
+  "short_name": "Solo Level",
+  "description": "Прокачай себя. Каждый день.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0f",
+  "theme_color": "#7c5cfc",
+  "icons": []
+}
