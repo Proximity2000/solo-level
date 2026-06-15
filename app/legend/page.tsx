@@ -121,6 +121,38 @@ export default async function LegendPage() {
 
         <div style={{ padding: '20px 16px', display: 'flex', flexDirection: 'column', gap: 28 }}>
 
+          {/* ─── Моё испытание ─── */}
+          <div>
+            <SectionTitle>Моё испытание</SectionTitle>
+            <div
+              style={{
+                background: 'var(--surface)',
+                borderRadius: 12,
+                padding: '18px 16px',
+                border: '1px solid var(--border)',
+              }}
+            >
+              <p style={{ fontSize: 14, color: 'var(--muted)', lineHeight: 1.6, marginBottom: 14 }}>
+                Выбери одно большое испытание, которое войдёт в твою Легенду.
+              </p>
+              <a
+                href="/trials"
+                style={{
+                  display: 'inline-block',
+                  padding: '10px 20px',
+                  borderRadius: 10,
+                  background: 'var(--accent)',
+                  color: '#fff',
+                  fontSize: 14,
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                }}
+              >
+                Выбрать испытание
+              </a>
+            </div>
+          </div>
+
           {/* ─── Точка старта ─── */}
           <div>
             <SectionTitle>Точка старта</SectionTitle>
