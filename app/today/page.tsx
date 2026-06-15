@@ -173,6 +173,35 @@ export default async function TodayPage() {
             Миссии на сегодня
           </p>
 
+          {/* ── День закрыт ── */}
+          {typedMissions.length > 0 && typedMissions.every(m => m.completion !== 'pending') && (() => {
+            const hasMixed = typedMissions.some(
+              m => m.completion === 'simplified' || m.completion === 'minimum'
+            )
+            return (
+              <div
+                style={{
+                  background: 'var(--surface)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 16,
+                  padding: '22px 18px',
+                  textAlign: 'center',
+                  marginBottom: 4,
+                }}
+              >
+                <p style={{ fontSize: 28, marginBottom: 10 }}>{hasMixed ? '👊' : '🏆'}</p>
+                <p style={{ fontSize: 17, fontWeight: 800, color: 'var(--text)', marginBottom: 8 }}>
+                  День закрыт
+                </p>
+                <p style={{ fontSize: 14, color: 'var(--muted)', lineHeight: 1.65, whiteSpace: 'pre-line' }}>
+                  {hasMixed
+                    ? 'Ты всё равно сделал шаг вперёд.\nСегодня было не идеально — но ты не слился.\nЗавтра попробуй закрыть день на полную.'
+                    : 'Красавчик. Сегодня ты сделал всё по полной.\nНовая миссия будет завтра.'}
+                </p>
+              </div>
+            )
+          })()}
+
           {typedMissions.length === 0 ? (
             <div
               style={{

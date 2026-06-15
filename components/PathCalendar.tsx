@@ -14,7 +14,7 @@ interface PathCalendarProps {
 
 // Цвет клетки по результату дня
 function dayColor(result: DayResult | null, isToday: boolean): string {
-  if (isToday && !result) return 'var(--accent)'
+  if (isToday && !result) return '#2e2e42'
   switch (result) {
     case 'full':       return '#22c55e'  // зелёный
     case 'simplified': return '#eab308'  // жёлтый

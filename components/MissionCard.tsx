@@ -123,66 +123,74 @@ export default function MissionCard({ mission, onComplete }: Props) {
           {desc}
         </p>
 
-        {/* Индикатор упрощения */}
-        {!isDone && level > 0 && (
-          <p
+        {/* Сегментированный выбор уровня */}
+        {!isDone && (
+          <div
             style={{
-              fontSize: 12,
-              fontWeight: 700,
-              color: level === 1 ? 'var(--awareness)' : 'var(--challenge)',
-              marginBottom: 10,
-              letterSpacing: '0.03em',
+              display: 'flex',
+              gap: 2,
+              marginBottom: 12,
+              background: 'rgba(255,255,255,0.05)',
+              borderRadius: 10,
+              padding: 3,
             }}
           >
-            {level === 1 ? '↓ Упрощённый вариант' : '↓↓ Минимум дня'}
-          </p>
+            {([
+              { lvl: 0 as SimplificationLevel, label: 'Полная' },
+              { lvl: 1 as SimplificationLevel, label: 'Упрощённая' },
+              { lvl: 2 as SimplificationLevel, label: 'Минимум' },
+            ]).map(({ lvl, label }) => {
+              const active = level === lvl
+              const activeColor = lvl === 0 ? color : lvl === 1 ? '#eab308' : '#3b82f6'
+              return (
+                <button
+                  key={lvl}
+                  onClick={() => setLevel(lvl)}
+                  disabled={isPending}
+                  style={{
+                    flex: 1,
+                    padding: '7px 4px',
+                    borderRadius: 8,
+                    border: 'none',
+                    background: active ? activeColor + '22' : 'transparent',
+                    color: active ? activeColor : 'var(--muted)',
+                    fontSize: 12,
+                    fontWeight: active ? 700 : 400,
+                    cursor: 'pointer',
+                    transition: 'all 0.1s',
+                  }}
+                >
+                  {label}
+                </button>
+              )
+            })}
+          </div>
         )}
 
-        {/* Статус выполнения или кнопки */}
+        {/* Статус выполнения или кнопка */}
         {isDone ? (
           <p style={{ fontSize: 13, color, fontWeight: 600 }}>
             ✓ Выполнено · +{mission.xp_earned} XP
           </p>
         ) : (
-          <div style={{ display: 'flex', gap: 8 }}>
-            {level < 2 && (
-              <button
-                onClick={() => setLevel((prev) => Math.min(2, prev + 1) as SimplificationLevel)}
-                disabled={isPending}
-                style={{
-                  flex: 1,
-                  padding: '10px 8px',
-                  borderRadius: 10,
-                  border: '1px solid var(--border)',
-                  background: 'transparent',
-                  color: 'var(--muted)',
-                  fontSize: 13,
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
-              >
-                {level === 0 ? 'Упростить' : 'Минимум дня'}
-              </button>
-            )}
-            <button
-              onClick={() => setShowModal(true)}
-              disabled={isPending}
-              style={{
-                flex: 1,
-                padding: '10px 8px',
-                borderRadius: 10,
-                border: 'none',
-                background: color,
-                color: '#fff',
-                fontSize: 13,
-                fontWeight: 700,
-                cursor: isPending ? 'not-allowed' : 'pointer',
-                opacity: isPending ? 0.5 : 1,
-              }}
-            >
-              {isPending ? '...' : 'Выполнено'}
-            </button>
-          </div>
+          <button
+            onClick={() => setShowModal(true)}
+            disabled={isPending}
+            style={{
+              width: '100%',
+              padding: '11px 8px',
+              borderRadius: 10,
+              border: 'none',
+              background: color,
+              color: '#fff',
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: isPending ? 'not-allowed' : 'pointer',
+              opacity: isPending ? 0.5 : 1,
+            }}
+          >
+            {isPending ? '...' : 'Выполнено'}
+          </button>
         )}
       </div>
 

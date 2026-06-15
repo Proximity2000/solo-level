@@ -93,7 +93,7 @@ export default function SurveyPage() {
       {/* Spheres */}
       <div>
         <p style={sectionLabel}>В каких сферах хочешь прокачаться?</p>
-        <p style={sectionHint}>Выбери 1–3 сферы, на которые хочешь сделать упор в ближайшее время.</p>
+        <p style={sectionHint}>Выбери сферы, на которые хочешь сделать акцент сейчас.</p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {SURVEY_SPHERES.map(({ key, label, emoji, desc }) => {
             const active = selectedSpheres.includes(key)
