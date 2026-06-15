@@ -6,6 +6,7 @@ import { useState } from 'react'
 type Answers = {
   step1: string[]
   step2: string
+  step2custom: string
   step3: string
   step4: string[]
   step5: string[]
@@ -53,7 +54,7 @@ const STEPS: Step[] = [
       '11–20 раз в день',
       '20+ раз в день',
       'Почти постоянно',
-      'По-разному',
+      'Добавить свой ответ',
     ],
   },
   {
@@ -181,8 +182,21 @@ const STEPS: Step[] = [
 ]
 
 const EMPTY: Answers = {
-  step1: [], step2: '', step3: '', step4: [], step5: [],
+  step1: [], step2: '', step2custom: '', step3: '', step4: [], step5: [],
   step6: '', step7: [], step8: '', step9: '', step10: [],
+}
+
+const CUSTOM_OPTION = 'Добавить свой ответ'
+
+function step2Placeholder(step1: string[]): string {
+  if (step1.length > 1) return 'Например: сигареты утром, электронка в течение дня'
+  if (step1.includes('Сигареты')) return 'Например: 8–12 сигарет в день, иногда больше'
+  if (step1.includes('Электронки / одноразки')) return 'Например: электронка почти весь день, около 30–40 затяжек'
+  if (step1.includes('Вейп')) return 'Например: электронка почти весь день, около 30–40 затяжек'
+  if (step1.includes('Кальян')) return 'Например: 1–2 раза в неделю, обычно по выходным'
+  if (step1.includes('Никотиновые смеси / снюс')) return 'Например: 5–6 раз в день'
+  if (step1.includes('Сам ритуал курения')) return 'Например: несколько раз в день хочется просто выйти и подержать что-то в руке'
+  return 'Например: опиши свой режим употребления'
 }
 
 // ── Profile detector ──────────────────────────────────────────
@@ -274,7 +288,11 @@ export default function SmokingTrialPage() {
   function canNext(): boolean {
     if (!currentStep) return false
     const val = answers[currentStep.key]
-    return Array.isArray(val) ? val.length > 0 : val !== ''
+    const hasVal = Array.isArray(val) ? val.length > 0 : val !== ''
+    if (step === 2 && answers.step2 === CUSTOM_OPTION) {
+      return answers.step2custom.trim().length >= 2
+    }
+    return hasVal
   }
 
   function next() {
@@ -542,6 +560,21 @@ export default function SmokingTrialPage() {
               </button>
             )
           })}
+
+          {/* Кастомный ответ для шага 2 */}
+          {step === 2 && answers.step2 === CUSTOM_OPTION && (
+            <input
+              autoFocus
+              className="input"
+              type="text"
+              placeholder={step2Placeholder(answers.step1)}
+              value={answers.step2custom}
+              onChange={(e) =>
+                setAnswers((prev) => ({ ...prev, step2custom: e.target.value }))
+              }
+              style={{ marginTop: 4, fontSize: 15 }}
+            />
+          )}
         </div>
       </div>
 

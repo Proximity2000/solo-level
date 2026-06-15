@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { signOut } from './actions'
+import WorkloadSettings from './WorkloadSettings'
 
 export default async function ProfilePage() {
   const supabase = await createClient()
@@ -17,6 +18,12 @@ export default async function ProfilePage() {
     .single()
 
   if (!stats) redirect('/auth')
+
+  const { data: userData } = await supabase
+    .from('users')
+    .select('daily_minutes')
+    .eq('id', user.id)
+    .single()
 
   return (
     <div className="app-shell">
@@ -115,6 +122,23 @@ export default async function ProfilePage() {
             </div>
           )}
 
+          {/* Персонализация пути */}
+          <div>
+            <p
+              style={{
+                fontSize: 13,
+                fontWeight: 600,
+                color: 'var(--muted)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.07em',
+                marginBottom: 12,
+              }}
+            >
+              Персонализация пути
+            </p>
+            <WorkloadSettings dailyMinutes={userData?.daily_minutes ?? 30} />
+          </div>
+
           {/* Заглушка */}
           <p style={{ fontSize: 13, color: 'var(--muted)', textAlign: 'center' }}>
             Полный профиль появится позже
@@ -135,17 +159,28 @@ export default async function ProfilePage() {
 
       {/* Нижняя навигация */}
       <nav className="bottom-nav">
-        <a href="/today" className="nav-item">
+        <a href="/personalization" className="nav-item">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
+            <line x1="4" y1="21" x2="4" y2="14" /><line x1="4" y1="10" x2="4" y2="3" />
+            <line x1="12" y1="21" x2="12" y2="12" /><line x1="12" y1="8" x2="12" y2="3" />
+            <line x1="20" y1="21" x2="20" y2="16" /><line x1="20" y1="12" x2="20" y2="3" />
+            <line x1="1" y1="14" x2="7" y2="14" />
+            <line x1="9" y1="8" x2="15" y2="8" />
+            <line x1="17" y1="16" x2="23" y2="16" />
           </svg>
-          Сегодня
+          Персонализация
         </a>
         <a href="/path" className="nav-item">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
           </svg>
           Путь
+        </a>
+        <a href="/today" className="nav-item">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
+          </svg>
+          Сегодня
         </a>
         <a href="/legend" className="nav-item">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
