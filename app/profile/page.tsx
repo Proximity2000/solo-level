@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { signOut } from './actions'
-import WorkloadSettings from './WorkloadSettings'
 
 export default async function ProfilePage() {
   const supabase = await createClient()
@@ -18,12 +17,6 @@ export default async function ProfilePage() {
     .single()
 
   if (!stats) redirect('/auth')
-
-  const { data: userData } = await supabase
-    .from('users')
-    .select('daily_minutes')
-    .eq('id', user.id)
-    .single()
 
   return (
     <div className="app-shell">
@@ -121,23 +114,6 @@ export default async function ProfilePage() {
               </p>
             </div>
           )}
-
-          {/* Персонализация пути */}
-          <div>
-            <p
-              style={{
-                fontSize: 13,
-                fontWeight: 600,
-                color: 'var(--muted)',
-                textTransform: 'uppercase',
-                letterSpacing: '0.07em',
-                marginBottom: 12,
-              }}
-            >
-              Персонализация пути
-            </p>
-            <WorkloadSettings dailyMinutes={userData?.daily_minutes ?? 30} />
-          </div>
 
           {/* Заглушка */}
           <p style={{ fontSize: 13, color: 'var(--muted)', textAlign: 'center' }}>
