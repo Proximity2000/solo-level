@@ -1,8 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import WorkloadSettings from '@/app/profile/WorkloadSettings'
-
-const SPHERES = ['Тело', 'Разум', 'Дисциплина', 'Осознанность', 'Социум']
+import FocusSpheresSettings from './FocusSpheresSettings'
 
 export default async function PersonalizationPage() {
   const supabase = await createClient()
@@ -14,7 +13,7 @@ export default async function PersonalizationPage() {
 
   const { data: userData } = await supabase
     .from('users')
-    .select('daily_minutes')
+    .select('daily_minutes, preferred_spheres')
     .eq('id', user.id)
     .single()
 
@@ -69,19 +68,6 @@ export default async function PersonalizationPage() {
             >
               Режим нагрузки
             </p>
-            <div
-              style={{
-                background: 'var(--surface)',
-                borderRadius: 12,
-                padding: '14px 16px',
-                border: '1px solid var(--border)',
-                marginBottom: 10,
-              }}
-            >
-              <p style={{ fontSize: 14, color: 'var(--muted)', lineHeight: 1.55 }}>
-                Выбери, сколько сил готов вкладывать в ежедневные миссии.
-              </p>
-            </div>
             <WorkloadSettings dailyMinutes={userData?.daily_minutes ?? 30} />
           </div>
 
@@ -99,64 +85,7 @@ export default async function PersonalizationPage() {
             >
               Акценты развития
             </p>
-            <div
-              style={{
-                background: 'var(--surface)',
-                borderRadius: 12,
-                padding: '16px',
-                border: '1px solid var(--border)',
-              }}
-            >
-              <p style={{ fontSize: 14, color: 'var(--muted)', lineHeight: 1.55, marginBottom: 14 }}>
-                Все сферы развиваются постепенно. Выбранные акценты будут появляться чаще в миссиях.
-              </p>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                {SPHERES.map((sphere) => (
-                  <span
-                    key={sphere}
-                    style={{
-                      fontSize: 13,
-                      fontWeight: 600,
-                      color: 'var(--muted)',
-                      background: 'rgba(255,255,255,0.06)',
-                      border: '1px solid var(--border)',
-                      borderRadius: 20,
-                      padding: '5px 14px',
-                    }}
-                  >
-                    {sphere}
-                  </span>
-                ))}
-              </div>
-              <p
-                style={{
-                  fontSize: 12,
-                  color: 'var(--muted)',
-                  marginTop: 14,
-                  opacity: 0.6,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 700,
-                    color: 'var(--muted)',
-                    background: 'rgba(255,255,255,0.07)',
-                    border: '1px solid var(--border)',
-                    borderRadius: 20,
-                    padding: '2px 8px',
-                    letterSpacing: '0.05em',
-                    textTransform: 'uppercase' as const,
-                  }}
-                >
-                  Скоро
-                </span>
-                Настройка акцентов появится в ближайшем обновлении.
-              </p>
-            </div>
+            <FocusSpheresSettings initialSpheres={userData?.preferred_spheres ?? []} />
           </div>
 
           {/* ─── Официальное испытание ─── */}
