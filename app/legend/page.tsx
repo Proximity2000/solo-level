@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import type { UserSnapshot, UserStats, UserGoal } from '@/lib/types'
+import type { UserSnapshot, UserStats, UserGoal, OfficialTrial } from '@/lib/types'
 
 const ACTIVITY_LABELS: Record<string, string> = {
   none: 'Не занимаюсь',
@@ -83,9 +83,18 @@ export default async function LegendPage() {
     .eq('status', 'completed')
     .order('completed_at', { ascending: false })
 
+  // активное испытание
+  const { data: activeTrialRaw } = await supabase
+    .from('official_trials')
+    .select('*')
+    .eq('user_id', user.id)
+    .eq('status', 'active')
+    .maybeSingle()
+
   const typedSnapshot = snapshot as UserSnapshot | null
   const typedStats = stats as UserStats
   const typedGoals = (goals ?? []) as UserGoal[]
+  const activeTrial = activeTrialRaw as OfficialTrial | null
 
   return (
     <div className="app-shell">
@@ -219,6 +228,64 @@ export default async function LegendPage() {
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* ─── Текущее испытание ─── */}
+          <div>
+            <SectionTitle>Текущее испытание</SectionTitle>
+            {activeTrial ? (
+              <div
+                style={{
+                  background: 'var(--surface)',
+                  borderRadius: 12,
+                  padding: '18px 16px',
+                  border: '1px solid var(--accent)',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                  <span style={{ fontSize: 24 }}>🚭</span>
+                  <div>
+                    <p style={{ fontSize: 16, fontWeight: 800, color: 'var(--text)', lineHeight: 1.2 }}>
+                      {activeTrial.title}
+                    </p>
+                    <p style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 600, marginTop: 2 }}>
+                      День {activeTrial.current_day}
+                    </p>
+                  </div>
+                </div>
+                <div
+                  style={{
+                    background: 'rgba(124,92,252,0.08)',
+                    borderRadius: 10,
+                    padding: '12px 14px',
+                    marginBottom: 10,
+                    border: '1px solid rgba(124,92,252,0.2)',
+                  }}
+                >
+                  <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 2 }}>Первый трофей</p>
+                  <p style={{ fontSize: 14, color: 'var(--text)', fontWeight: 600 }}>
+                    🪵 Деревянная сломанная сигарета
+                  </p>
+                  <p style={{ fontSize: 12, color: 'var(--muted)', marginTop: 6 }}>
+                    До первого трофея: {Math.max(0, 7 - activeTrial.current_day)} дн.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div
+                style={{
+                  background: 'var(--surface)',
+                  borderRadius: 12,
+                  padding: '16px',
+                  border: '1px solid var(--border)',
+                  textAlign: 'center',
+                  color: 'var(--muted)',
+                  fontSize: 14,
+                }}
+              >
+                Активных испытаний пока нет.
+              </div>
+            )}
           </div>
 
           {/* ─── История целей ─── */}

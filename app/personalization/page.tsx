@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import WorkloadSettings from '@/app/profile/WorkloadSettings'
 import FocusSpheresSettings from './FocusSpheresSettings'
+import type { OfficialTrial } from '@/lib/types'
 
 export default async function PersonalizationPage() {
   const supabase = await createClient()
@@ -16,6 +17,15 @@ export default async function PersonalizationPage() {
     .select('daily_minutes, preferred_spheres')
     .eq('id', user.id)
     .single()
+
+  const { data: activeTrialRaw } = await supabase
+    .from('official_trials')
+    .select('*')
+    .eq('user_id', user.id)
+    .eq('status', 'active')
+    .maybeSingle()
+
+  const activeTrial = activeTrialRaw as OfficialTrial | null
 
   return (
     <div className="app-shell">
@@ -102,33 +112,96 @@ export default async function PersonalizationPage() {
             >
               Официальное испытание
             </p>
-            <div
-              style={{
-                background: 'var(--surface)',
-                borderRadius: 12,
-                padding: '18px 16px',
-                border: '1px solid var(--border)',
-              }}
-            >
-              <p style={{ fontSize: 14, color: 'var(--muted)', lineHeight: 1.55, marginBottom: 14 }}>
-                Выбери большое испытание, которое войдёт в твою Легенду.
-              </p>
-              <a
-                href="/trials"
+            {activeTrial ? (
+              <div
                 style={{
-                  display: 'inline-block',
-                  padding: '10px 20px',
-                  borderRadius: 10,
-                  background: 'var(--accent)',
-                  color: '#fff',
-                  fontSize: 14,
-                  fontWeight: 600,
-                  textDecoration: 'none',
+                  background: 'var(--surface)',
+                  borderRadius: 12,
+                  padding: '18px 16px',
+                  border: '1px solid var(--accent)',
                 }}
               >
-                Выбрать испытание
-              </a>
-            </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                  <span style={{ fontSize: 22 }}>🚭</span>
+                  <div>
+                    <p style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 700, marginBottom: 2 }}>
+                      Активно
+                    </p>
+                    <p style={{ fontSize: 16, fontWeight: 800, color: 'var(--text)' }}>
+                      {activeTrial.title}
+                    </p>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+                  <span
+                    style={{
+                      fontSize: 12, fontWeight: 600,
+                      color: 'var(--muted)',
+                      background: 'rgba(255,255,255,0.06)',
+                      border: '1px solid var(--border)',
+                      borderRadius: 20, padding: '3px 10px',
+                    }}
+                  >
+                    День {activeTrial.current_day}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: 12, fontWeight: 600,
+                      color: 'var(--muted)',
+                      background: 'rgba(255,255,255,0.06)',
+                      border: '1px solid var(--border)',
+                      borderRadius: 20, padding: '3px 10px',
+                    }}
+                  >
+                    До первого трофея: {Math.max(0, 7 - activeTrial.current_day)} дн.
+                  </span>
+                </div>
+                <a
+                  href="/trials/smoking"
+                  style={{
+                    display: 'inline-block',
+                    padding: '10px 20px',
+                    borderRadius: 10,
+                    background: 'transparent',
+                    color: 'var(--accent)',
+                    fontSize: 14,
+                    fontWeight: 600,
+                    textDecoration: 'none',
+                    border: '1px solid var(--accent)',
+                  }}
+                >
+                  Открыть испытание
+                </a>
+              </div>
+            ) : (
+              <div
+                style={{
+                  background: 'var(--surface)',
+                  borderRadius: 12,
+                  padding: '18px 16px',
+                  border: '1px solid var(--border)',
+                }}
+              >
+                <p style={{ fontSize: 14, color: 'var(--muted)', lineHeight: 1.55, marginBottom: 14 }}>
+                  Выбери большое испытание, которое войдёт в твою Легенду.
+                </p>
+                <a
+                  href="/trials"
+                  style={{
+                    display: 'inline-block',
+                    padding: '10px 20px',
+                    borderRadius: 10,
+                    background: 'var(--accent)',
+                    color: '#fff',
+                    fontSize: 14,
+                    fontWeight: 600,
+                    textDecoration: 'none',
+                  }}
+                >
+                  Выбрать испытание
+                </a>
+              </div>
+            )}
           </div>
 
           {/* ─── Личное испытание ─── */}

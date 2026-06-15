@@ -110,6 +110,23 @@ export interface UserGoal {
   completed_in_days: number | null
 }
 
+// TABLE: official_trials
+export interface OfficialTrial {
+  id: string
+  user_id: string
+  trial_key: string
+  title: string
+  status: 'active' | 'completed' | 'abandoned'
+  started_at: string
+  completed_at: string | null
+  mode: string | null
+  profile_types: string[]
+  answers: Record<string, unknown>
+  current_day: number
+  created_at: string
+  updated_at: string
+}
+
 // ============================================================
 // XP формула: xpForLevel(N) = Math.round(80 * N^1.6)
 // ============================================================

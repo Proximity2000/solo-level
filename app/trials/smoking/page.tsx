@@ -1,6 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
+import { startSmokingTrial } from './actions'
 
 // ── Types ──────────────────────────────────────────────────────
 type Answers = {
@@ -256,9 +258,19 @@ const card: React.CSSProperties = {
 }
 
 // ── Component ─────────────────────────────────────────────────
+function modeFromStep9(step9: string): string {
+  if (step9.startsWith('Мягко')) return 'light'
+  if (step9.startsWith('Средне')) return 'medium'
+  if (step9.startsWith('Резко')) return 'hard'
+  return 'auto'
+}
+
 export default function SmokingTrialPage() {
+  const router = useRouter()
   const [step, setStep] = useState(0) // 0 = intro, 1-10 = questions, 11 = result
   const [answers, setAnswers] = useState<Answers>(EMPTY)
+  const [trialError, setTrialError] = useState<string | null>(null)
+  const [isPending, startTransition] = useTransition()
 
   const currentStep = STEPS[step - 1]
 
@@ -431,18 +443,34 @@ export default function SmokingTrialPage() {
           {/* Кнопки */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
             <button
-              disabled
+              disabled={isPending}
+              onClick={() => {
+                setTrialError(null)
+                startTransition(async () => {
+                  const result = await startSmokingTrial({
+                    answers,
+                    profileTypes: detectTypes(answers),
+                    mode: modeFromStep9(answers.step9),
+                  })
+                  if (result.error) {
+                    setTrialError(result.error)
+                  } else {
+                    router.push('/personalization')
+                  }
+                })
+              }}
               style={{
-                width: '100%', padding: '13px', borderRadius: 12, border: '1px solid var(--border)',
-                background: 'rgba(255,255,255,0.04)', color: 'var(--muted)',
-                fontSize: 15, fontWeight: 700, cursor: 'not-allowed',
+                width: '100%', padding: '13px', borderRadius: 12, border: 'none',
+                background: isPending ? 'rgba(124,92,252,0.5)' : 'var(--accent)',
+                color: '#fff', fontSize: 15, fontWeight: 700,
+                cursor: isPending ? 'not-allowed' : 'pointer',
               }}
             >
-              Начать испытание
+              {isPending ? 'Сохранение...' : 'Начать испытание'}
             </button>
-            <p style={{ fontSize: 12, color: 'var(--muted)', textAlign: 'center' }}>
-              Сохранение испытания появится следующим шагом.
-            </p>
+            {trialError && (
+              <p style={{ fontSize: 13, color: '#ef4444', textAlign: 'center' }}>{trialError}</p>
+            )}
             <a
               href="/legend"
               style={{
