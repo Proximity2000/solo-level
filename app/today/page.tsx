@@ -73,6 +73,14 @@ export default async function TodayPage() {
     }
   }
 
+  // 5a. Активное официальное испытание
+  const { data: activeTrial } = await supabase
+    .from('official_trials')
+    .select('id, trial_key, current_day')
+    .eq('user_id', user.id)
+    .eq('status', 'active')
+    .maybeSingle()
+
   // 6. XP прогресс
   const { current: xpCurrent, needed: xpNeeded, progress } = getProgressToNextLevel(
     stats.total_xp,
@@ -245,6 +253,105 @@ export default async function TodayPage() {
             </>
           )}
         </div>
+
+        {/* ── Испытание ── */}
+        {activeTrial && activeTrial.trial_key === 'smoking' && (
+          <div style={{ padding: '0 16px 20px' }}>
+            <p
+              style={{
+                fontSize: 13,
+                fontWeight: 600,
+                color: 'var(--muted)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.07em',
+                marginBottom: 12,
+              }}
+            >
+              Испытание
+            </p>
+            <div
+              style={{
+                background: 'var(--surface)',
+                border: '1px solid var(--border)',
+                borderRadius: 16,
+                padding: '18px 16px',
+              }}
+            >
+              {/* Заголовок карточки */}
+              <div style={{ marginBottom: 14 }}>
+                <p
+                  style={{
+                    fontSize: 17,
+                    fontWeight: 800,
+                    color: 'var(--text)',
+                    marginBottom: 2,
+                  }}
+                >
+                  Бросить курить
+                </p>
+                <p style={{ fontSize: 12, color: 'var(--accent)', fontWeight: 600 }}>
+                  День {activeTrial.current_day}
+                </p>
+              </div>
+
+              {/* Миссия */}
+              <div
+                style={{
+                  background: 'var(--bg)',
+                  borderRadius: 12,
+                  padding: '14px',
+                  marginBottom: 14,
+                }}
+              >
+                <p
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 700,
+                    color: 'var(--text)',
+                    marginBottom: 6,
+                  }}
+                >
+                  Разведка привычки
+                </p>
+                <p style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.65 }}>
+                  Сегодня отследи 3 момента, когда захотелось курить: время, место и причина.
+                  Не борись с собой — наша задача увидеть систему.
+                </p>
+              </div>
+
+              {/* Подсказка */}
+              <p
+                style={{
+                  fontSize: 12,
+                  color: 'var(--muted)',
+                  lineHeight: 1.55,
+                  marginBottom: 14,
+                }}
+              >
+                Это миссия твоего личного испытания. Она не заменяет обычные ежедневные миссии.
+              </p>
+
+              {/* Кнопка-заглушка */}
+              <button
+                disabled
+                style={{
+                  width: '100%',
+                  padding: '13px 16px',
+                  borderRadius: 12,
+                  border: '1px solid var(--border)',
+                  background: 'var(--surface)',
+                  color: 'var(--muted)',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: 'not-allowed',
+                  opacity: 0.55,
+                }}
+              >
+                Зачёт испытаний появится следующим шагом
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ── Нижняя навигация (заглушка) ── */}
