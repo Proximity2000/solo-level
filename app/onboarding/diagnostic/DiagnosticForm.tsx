@@ -16,6 +16,14 @@ const READING_OPTIONS = [
   { value: 'regular', label: 'Регулярно' },
 ]
 
+const DISCIPLINE_OPTIONS = [
+  { value: 1,  label: 'Хаос',               desc: 'Часто откладываю, день проходит как попало.' },
+  { value: 3,  label: 'Нестабильно',         desc: 'Иногда держусь, но быстро сбиваюсь.' },
+  { value: 5,  label: 'Средне',              desc: 'Есть порядок, но многое зависит от настроения.' },
+  { value: 7,  label: 'Хорошо',              desc: 'Часто довожу дела до конца, но бывают срывы.' },
+  { value: 10, label: 'Железная воля',       desc: 'Стабильный режим, редко отступаю от плана.' },
+]
+
 export default function DiagnosticForm({ returnTo }: { returnTo: string | null }) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
@@ -140,7 +148,10 @@ export default function DiagnosticForm({ returnTo }: { returnTo: string | null }
 
       {/* Reading */}
       <div>
-        <label style={labelStyle}>Чтение</label>
+        <label style={labelStyle}>Обучение и чтение</label>
+        <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 10, lineHeight: 1.5 }}>
+          Как часто ты читаешь, учишься или осознанно развиваешь мышление?
+        </p>
         <div style={{ display: 'flex', gap: 8 }}>
           {READING_OPTIONS.map(({ value, label }) => (
             <button
@@ -167,20 +178,34 @@ export default function DiagnosticForm({ returnTo }: { returnTo: string | null }
 
       {/* Discipline */}
       <div>
-        <label style={labelStyle}>
-          Дисциплина — {discipline}/10
-        </label>
-        <input
-          type="range"
-          min={1}
-          max={10}
-          value={discipline}
-          onChange={(e) => setDiscipline(Number(e.target.value))}
-          style={{ width: '100%', accentColor: 'var(--accent)' }}
-        />
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
-          <span style={{ fontSize: 11, color: 'var(--muted)' }}>Хаос</span>
-          <span style={{ fontSize: 11, color: 'var(--muted)' }}>Железная воля</span>
+        <label style={labelStyle}>Дисциплина</label>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {DISCIPLINE_OPTIONS.map(({ value, label, desc }) => {
+            const active = discipline === value
+            return (
+              <button
+                key={value}
+                onClick={() => setDiscipline(value)}
+                style={{
+                  padding: '12px 14px',
+                  borderRadius: 10,
+                  border: `1px solid ${active ? 'var(--accent)' : 'var(--border)'}`,
+                  background: active ? 'rgba(124,92,252,0.12)' : 'var(--surface)',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  transition: 'all 0.15s',
+                  width: '100%',
+                }}
+              >
+                <span style={{ display: 'block', fontSize: 14, fontWeight: 600, color: active ? 'var(--accent)' : 'var(--text)' }}>
+                  {label}
+                </span>
+                <span style={{ display: 'block', fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>
+                  {desc}
+                </span>
+              </button>
+            )
+          })}
         </div>
       </div>
 

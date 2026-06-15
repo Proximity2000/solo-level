@@ -16,11 +16,11 @@ interface PathCalendarProps {
 function dayColor(result: DayResult | null, isToday: boolean): string {
   if (isToday && !result) return 'var(--accent)'
   switch (result) {
-    case 'full':       return 'var(--accent)'    // фиолетовый
-    case 'simplified': return 'var(--mind)'      // синий
-    case 'minimum':    return 'var(--awareness)' // жёлтый
-    case 'skipped':    return 'var(--body)'      // красный
-    default:           return '#2e2e42'           // пусто/будущее
+    case 'full':       return '#22c55e'  // зелёный
+    case 'simplified': return '#eab308'  // жёлтый
+    case 'minimum':    return '#3b82f6'  // голубой
+    case 'skipped':    return '#ef4444'  // красный
+    default:           return '#2e2e42'  // нейтральный
   }
 }
 
@@ -142,11 +142,11 @@ export default function PathCalendar({ logs, days = 90 }: PathCalendarProps) {
         }}
       >
         {[
-          { color: 'var(--accent)',    label: `Полный (${counts.full})` },
-          { color: 'var(--mind)',      label: `Упрощённый (${counts.simplified})` },
-          { color: 'var(--awareness)',  label: `Минимум (${counts.minimum})` },
-          { color: 'var(--body)',      label: `Пропущен (${counts.skipped})` },
-          { color: '#2e2e42',          label: 'Нет данных' },
+          { color: '#22c55e', label: `Полный (${counts.full})` },
+          { color: '#eab308', label: `Упрощённый (${counts.simplified})` },
+          { color: '#3b82f6', label: `Минимум (${counts.minimum})` },
+          { color: '#ef4444', label: `Пропущен (${counts.skipped})` },
+          { color: '#2e2e42', label: 'Нет данных' },
         ].map(({ color, label }) => (
           <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
             <div

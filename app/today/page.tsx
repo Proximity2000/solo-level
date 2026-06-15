@@ -186,13 +186,34 @@ export default async function TodayPage() {
               <p>Миссии не найдены. Попробуй обновить страницу.</p>
             </div>
           ) : (
-            typedMissions.map((mission) => (
-              <MissionCard
-                key={mission.id}
-                mission={mission}
-                onComplete={handleComplete}
-              />
-            ))
+            <>
+              {typedMissions.filter(m => m.type !== 'challenge').map((mission) => (
+                <MissionCard
+                  key={mission.id}
+                  mission={mission}
+                  onComplete={handleComplete}
+                />
+              ))}
+              {typedMissions.some(m => m.type === 'challenge') && (
+                <>
+                  <p style={{
+                    fontSize: 11,
+                    color: 'var(--muted)',
+                    marginTop: 8,
+                    marginBottom: 2,
+                  }}>
+                    🔥 Вызов дня — задание посложнее, за которое дают больше XP.
+                  </p>
+                  {typedMissions.filter(m => m.type === 'challenge').map((mission) => (
+                    <MissionCard
+                      key={mission.id}
+                      mission={mission}
+                      onComplete={handleComplete}
+                    />
+                  ))}
+                </>
+              )}
+            </>
           )}
         </div>
       </div>

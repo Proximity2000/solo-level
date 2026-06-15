@@ -2,7 +2,15 @@
 
 import { useState, useTransition } from 'react'
 import { saveSurvey } from '../actions'
-import { SPHERE_LABELS, SPHERE_EMOJI, type Sphere, type Pace } from '@/lib/types'
+import type { Sphere, Pace } from '@/lib/types'
+
+const SURVEY_SPHERES: { key: Sphere; label: string; emoji: string; desc: string }[] = [
+  { key: 'body',       label: 'Тело',         emoji: '💪', desc: 'Энергия, здоровье, движение, сон' },
+  { key: 'mind',       label: 'Разум',        emoji: '🧠', desc: 'Обучение, мышление, фокус' },
+  { key: 'discipline', label: 'Дисциплина',   emoji: '⚡', desc: 'Режим, порядок, доведение дел' },
+  { key: 'awareness',  label: 'Осознанность', emoji: '🌿', desc: 'Эмоции, спокойствие, контроль реакций' },
+  { key: 'social',     label: 'Социум',       emoji: '🤝', desc: 'Общение, отношения, уверенность' },
+]
 
 const GOALS = [
   'Похудеть',
@@ -14,16 +22,15 @@ const GOALS = [
 ]
 
 const PACES: { key: Pace; label: string; desc: string }[] = [
-  { key: 'calm', label: 'Спокойный', desc: '~15 мин в день' },
-  { key: 'standard', label: 'Стандартный', desc: '~30 мин в день' },
-  { key: 'intense', label: 'Интенсивный', desc: '~60 мин в день' },
+  { key: 'calm',     label: 'Спокойный',    desc: '~15 мин в день' },
+  { key: 'standard', label: 'Стандартный',  desc: '~30 мин в день' },
+  { key: 'intense',  label: 'Интенсивный',  desc: '~60 мин в день' },
 ]
-
-const SPHERES = Object.keys(SPHERE_LABELS) as Sphere[]
 
 export default function SurveyPage() {
   const [selectedSpheres, setSelectedSpheres] = useState<Sphere[]>([])
   const [selectedGoal, setSelectedGoal] = useState<string>('')
+  const [customGoal, setCustomGoal] = useState<string>('')
   const [selectedPace, setSelectedPace] = useState<Pace>('standard')
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
@@ -38,13 +45,30 @@ export default function SurveyPage() {
     setError(null)
     const formData = new FormData()
     formData.set('pace', selectedPace)
-    if (selectedGoal) formData.set('goal', selectedGoal)
+
+    const goalValue = selectedGoal === 'Другое' ? customGoal.trim() : selectedGoal
+    if (goalValue) formData.set('goal', goalValue)
+
     formData.set('spheres', JSON.stringify(selectedSpheres))
 
     startTransition(async () => {
       const result = await saveSurvey(formData)
       if (result?.error) setError(result.error)
     })
+  }
+
+  const sectionLabel: React.CSSProperties = {
+    fontSize: 18,
+    fontWeight: 700,
+    color: 'var(--text)',
+    marginBottom: 4,
+  }
+
+  const sectionHint: React.CSSProperties = {
+    fontSize: 13,
+    color: 'var(--muted)',
+    marginBottom: 14,
+    lineHeight: 1.5,
   }
 
   return (
@@ -66,40 +90,40 @@ export default function SurveyPage() {
         ))}
       </div>
 
-      <h1 style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--text)' }}>
-        Расскажи о себе
-      </h1>
-
       {/* Spheres */}
       <div>
-        <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--muted)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-          Сферы развития
-        </p>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-          {SPHERES.map((sphere) => {
-            const active = selectedSpheres.includes(sphere)
+        <p style={sectionLabel}>В каких сферах хочешь прокачаться?</p>
+        <p style={sectionHint}>Выбери 1–3 сферы, на которые хочешь сделать упор в ближайшее время.</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {SURVEY_SPHERES.map(({ key, label, emoji, desc }) => {
+            const active = selectedSpheres.includes(key)
             return (
               <button
-                key={sphere}
-                onClick={() => toggleSphere(sphere)}
+                key={key}
+                onClick={() => toggleSphere(key)}
                 style={{
                   padding: '12px 14px',
                   borderRadius: 12,
                   border: `1px solid ${active ? 'var(--accent)' : 'var(--border)'}`,
                   background: active ? 'rgba(124,92,252,0.12)' : 'var(--surface)',
-                  color: active ? 'var(--accent)' : 'var(--muted)',
-                  fontSize: 14,
-                  fontWeight: 600,
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 8,
+                  gap: 12,
                   transition: 'all 0.15s',
                   textAlign: 'left',
+                  width: '100%',
                 }}
               >
-                <span>{SPHERE_EMOJI[sphere]}</span>
-                <span>{SPHERE_LABELS[sphere]}</span>
+                <span style={{ fontSize: 22, flexShrink: 0 }}>{emoji}</span>
+                <span>
+                  <span style={{ display: 'block', fontSize: 15, fontWeight: 600, color: active ? 'var(--accent)' : 'var(--text)' }}>
+                    {label}
+                  </span>
+                  <span style={{ display: 'block', fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>
+                    {desc}
+                  </span>
+                </span>
               </button>
             )
           })}
@@ -108,9 +132,8 @@ export default function SurveyPage() {
 
       {/* Goal */}
       <div>
-        <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--muted)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-          Главная цель
-        </p>
+        <p style={sectionLabel}>Есть личная цель?</p>
+        <p style={sectionHint}>Выбери из списка или укажи свою. Если пока не знаешь — можно пропустить и добавить позже.</p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {GOALS.map((goal) => {
             const active = selectedGoal === goal
@@ -135,14 +158,24 @@ export default function SurveyPage() {
               </button>
             )
           })}
+          {selectedGoal === 'Другое' && (
+            <input
+              className="input"
+              type="text"
+              placeholder="Напиши свою цель"
+              value={customGoal}
+              onChange={(e) => setCustomGoal(e.target.value)}
+              autoFocus
+              style={{ marginTop: 4 }}
+            />
+          )}
         </div>
       </div>
 
       {/* Pace */}
       <div>
-        <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--muted)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-          Темп развития
-        </p>
+        <p style={sectionLabel}>Сколько времени готов уделять в день?</p>
+        <p style={sectionHint}>Это поможет подобрать нагрузку. Начать можно с малого.</p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {PACES.map(({ key, label, desc }) => {
             const active = selectedPace === key

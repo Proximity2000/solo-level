@@ -48,14 +48,14 @@ export default function FirstMissionPage() {
             color: 'var(--text)',
             marginBottom: 16,
           }}>
-            Путь начат.
+            Путь открыт
           </h1>
           <p style={{
             fontSize: 16,
             color: 'var(--muted)',
             lineHeight: 1.65,
           }}>
-            Сегодня ты получишь первую миссию.
+            Твоя первая миссия уже ждёт.{'\n'}Сделай один шаг сегодня — и завтра ты будешь сильнее.
           </p>
         </div>
 
