@@ -3,7 +3,13 @@
 import { useState, useTransition } from 'react'
 import { saveFocusSpheres } from './actions'
 
-const ALL_SPHERES = ['Тело', 'Разум', 'Дисциплина', 'Осознанность', 'Социум']
+const ALL_SPHERES: { id: string; label: string }[] = [
+  { id: 'body', label: 'Тело' },
+  { id: 'mind', label: 'Разум' },
+  { id: 'discipline', label: 'Дисциплина' },
+  { id: 'awareness', label: 'Осознанность' },
+  { id: 'social', label: 'Социум' },
+]
 
 export default function FocusSpheresSettings({ initialSpheres }: { initialSpheres: string[] }) {
   const [selected, setSelected] = useState<string[]>(initialSpheres)
@@ -51,12 +57,12 @@ export default function FocusSpheresSettings({ initialSpheres }: { initialSphere
       </p>
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-        {ALL_SPHERES.map((sphere) => {
-          const active = selected.includes(sphere)
+        {ALL_SPHERES.map(({ id, label }) => {
+          const active = selected.includes(id)
           return (
             <button
-              key={sphere}
-              onClick={() => toggle(sphere)}
+              key={id}
+              onClick={() => toggle(id)}
               disabled={isPending}
               style={{
                 padding: '8px 18px',
@@ -70,7 +76,7 @@ export default function FocusSpheresSettings({ initialSpheres }: { initialSphere
                 transition: 'all 0.12s',
               }}
             >
-              {sphere}
+              {label}
             </button>
           )
         })}
