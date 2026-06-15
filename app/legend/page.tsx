@@ -221,6 +221,49 @@ export default async function LegendPage() {
             </div>
           </div>
 
+          {/* ─── Челленджи Solo Level ─── */}
+          <div>
+            <SectionTitle>Челленджи Solo Level</SectionTitle>
+            <div
+              style={{
+                background: 'var(--surface)',
+                borderRadius: 12,
+                padding: '18px 16px',
+                border: '1px solid var(--border)',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                <span style={{ fontSize: 22 }}>🏅</span>
+                <p style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>
+                  Челленджи Solo Level
+                </p>
+                <span
+                  style={{
+                    marginLeft: 'auto',
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: 'var(--muted)',
+                    background: 'rgba(255,255,255,0.07)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 20,
+                    padding: '3px 10px',
+                    letterSpacing: '0.05em',
+                    textTransform: 'uppercase' as const,
+                    flexShrink: 0,
+                  }}
+                >
+                  Скоро
+                </span>
+              </div>
+              <p style={{ fontSize: 14, color: 'var(--muted)', lineHeight: 1.65, marginBottom: 10 }}>
+                Скоро здесь появятся короткие испытания на 7–30 дней: 7 дней без сладких напитков, 24 часа без соцсетей, 7 дней утренней прогулки.
+              </p>
+              <p style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.6, opacity: 0.7 }}>
+                Это будут добровольные вызовы для тех, кто хочет проверить себя и получить особые трофеи Легенды.
+              </p>
+            </div>
+          </div>
+
           {/* ─── История целей ─── */}
           <div>
             <SectionTitle>История целей</SectionTitle>
