@@ -127,6 +127,20 @@ export interface OfficialTrial {
   updated_at: string
 }
 
+// TABLE: official_trial_daily_logs
+export interface OfficialTrialDailyLog {
+  id: string
+  trial_id: string
+  user_id: string
+  log_date: string
+  day_number: number
+  mission_key: string
+  mission_title: string
+  completed_at: string | null
+  created_at: string
+  updated_at: string
+}
+
 // ============================================================
 // XP формула: xpForLevel(N) = Math.round(80 * N^1.6)
 // ============================================================
