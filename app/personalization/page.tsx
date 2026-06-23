@@ -44,6 +44,16 @@ export default async function PersonalizationPage() {
     ? getEffectiveSmokingTrialDay(activeTrial, latestTrialLog, today)
     : 1
 
+  // трофей — есть ли у пользователя деревянная сигарета
+  const { data: woodTrophy } = activeTrial
+    ? await supabase
+        .from('official_trial_trophies')
+        .select('id')
+        .eq('trial_id', activeTrial.id)
+        .eq('trophy_key', 'smoking_broken_cigarette')
+        .maybeSingle()
+    : { data: null }
+
   return (
     <div className="app-shell">
       <div className="page-content" style={{ padding: '0 0 80px' }}>
@@ -149,7 +159,7 @@ export default async function PersonalizationPage() {
                     </p>
                   </div>
                 </div>
-                <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
                   <span
                     style={{
                       fontSize: 12, fontWeight: 600,
@@ -161,17 +171,31 @@ export default async function PersonalizationPage() {
                   >
                     День {effectiveTrialDay}
                   </span>
-                  <span
-                    style={{
-                      fontSize: 12, fontWeight: 600,
-                      color: 'var(--muted)',
-                      background: 'rgba(255,255,255,0.06)',
-                      border: '1px solid var(--border)',
-                      borderRadius: 20, padding: '3px 10px',
-                    }}
-                  >
-                    До первого трофея: {Math.max(0, 7 - effectiveTrialDay)} дн.
-                  </span>
+                  {woodTrophy ? (
+                    <span
+                      style={{
+                        fontSize: 12, fontWeight: 600,
+                        color: 'rgba(180,140,80,0.9)',
+                        background: 'rgba(180,140,80,0.1)',
+                        border: '1px solid rgba(180,140,80,0.35)',
+                        borderRadius: 20, padding: '3px 10px',
+                      }}
+                    >
+                      🪵 Первый трофей получен
+                    </span>
+                  ) : (
+                    <span
+                      style={{
+                        fontSize: 12, fontWeight: 600,
+                        color: 'var(--muted)',
+                        background: 'rgba(255,255,255,0.06)',
+                        border: '1px solid var(--border)',
+                        borderRadius: 20, padding: '3px 10px',
+                      }}
+                    >
+                      До первого трофея: {Math.max(0, 7 - effectiveTrialDay)} дн.
+                    </span>
+                  )}
                 </div>
                 <a
                   href="/trials/smoking"

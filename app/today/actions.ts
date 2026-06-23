@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { getSmokingTrialMission, getEffectiveSmokingTrialDay } from '@/lib/smoking-trial'
+import { SMOKING_WOOD_TROPHY } from '@/lib/trial-trophies'
 
 export type CompleteTrialMissionResult =
   | { success: true }
@@ -76,6 +77,24 @@ export async function completeTrialMission(): Promise<CompleteTrialMissionResult
     .update({ current_day: effectiveDay })
     .eq('id', trial.id)
   // Non-fatal if this update fails — log is the source of truth for progression
+
+  // Unlock Day 7 trophy (wood tier) — safe on retry via ON CONFLICT DO NOTHING
+  if (effectiveDay === 7) {
+    await supabase
+      .from('official_trial_trophies')
+      .upsert(
+        {
+          user_id:     user.id,
+          trial_id:    trial.id,
+          trophy_key:  SMOKING_WOOD_TROPHY.trophy_key,
+          tier:        SMOKING_WOOD_TROPHY.tier,
+          title:       SMOKING_WOOD_TROPHY.title,
+          description: SMOKING_WOOD_TROPHY.description,
+        },
+        { onConflict: 'trial_id,trophy_key,tier', ignoreDuplicates: true }
+      )
+    // Non-fatal — mission completion is already recorded above
+  }
 
   return { success: true }
 }

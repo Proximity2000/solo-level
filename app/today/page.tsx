@@ -103,6 +103,9 @@ export default async function TodayPage() {
     latestTrialLog?.log_date === today && latestTrialLog?.completed_at
   )
 
+  // 5d. Day 7 celebration: completed today on day 7
+  const showTrophyCelebration = isTrialCompletedToday && effectiveTrialDay === 7
+
   // 6. XP прогресс
   const { current: xpCurrent, needed: xpNeeded, progress } = getProgressToNextLevel(
     stats.total_xp,
@@ -297,6 +300,56 @@ export default async function TodayPage() {
               missionDescription={trialMission.description}
               isCompleted={isTrialCompletedToday}
             />
+
+            {/* ── Day 7 Trophy Celebration ── */}
+            {showTrophyCelebration && (
+              <div
+                style={{
+                  marginTop: 12,
+                  background: 'linear-gradient(135deg, rgba(124,92,252,0.12) 0%, rgba(180,140,80,0.12) 100%)',
+                  border: '1px solid rgba(180,140,80,0.4)',
+                  borderRadius: 16,
+                  padding: '20px 18px',
+                }}
+              >
+                <p
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    letterSpacing: '0.12em',
+                    color: 'rgba(180,140,80,0.9)',
+                    textTransform: 'uppercase',
+                    marginBottom: 10,
+                  }}
+                >
+                  Первый трофей получен
+                </p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                  <span style={{ fontSize: 32 }}>🪵</span>
+                  <p style={{ fontSize: 16, fontWeight: 800, color: 'var(--text)', lineHeight: 1.3 }}>
+                    Деревянная сломанная сигарета
+                  </p>
+                </div>
+                <p style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.65, marginBottom: 16 }}>
+                  Ты прошёл первую неделю. Это не финиш — это доказательство, что путь уже начался.
+                </p>
+                <a
+                  href="/legend"
+                  style={{
+                    display: 'inline-block',
+                    padding: '11px 20px',
+                    borderRadius: 10,
+                    background: 'var(--accent)',
+                    color: '#fff',
+                    fontSize: 14,
+                    fontWeight: 700,
+                    textDecoration: 'none',
+                  }}
+                >
+                  Открыть Легенду
+                </a>
+              </div>
+            )}
           </div>
         )}
       </div>

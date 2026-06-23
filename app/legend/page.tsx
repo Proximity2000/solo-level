@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getEffectiveSmokingTrialDay } from '@/lib/smoking-trial'
-import type { UserSnapshot, UserStats, UserGoal, OfficialTrial } from '@/lib/types'
+import type { UserSnapshot, UserStats, UserGoal, OfficialTrial, OfficialTrialTrophy } from '@/lib/types'
 
 const ACTIVITY_LABELS: Record<string, string> = {
   none: 'Не занимаюсь',
@@ -112,6 +112,15 @@ export default async function LegendPage() {
   const effectiveTrialDay = activeTrial
     ? getEffectiveSmokingTrialDay(activeTrial, latestTrialLog, today)
     : 1
+
+  // трофеи
+  const { data: trophiesRaw } = await supabase
+    .from('official_trial_trophies')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('unlocked_at', { ascending: false })
+
+  const trophies = (trophiesRaw ?? []) as OfficialTrialTrophy[]
 
   return (
     <div className="app-shell">
@@ -304,6 +313,48 @@ export default async function LegendPage() {
               </div>
             )}
           </div>
+
+          {/* ─── Трофеи ─── */}
+          {trophies.length > 0 && (
+            <div>
+              <SectionTitle>Трофеи</SectionTitle>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {trophies.map((trophy) => (
+                  <div
+                    key={trophy.id}
+                    style={{
+                      background: 'linear-gradient(135deg, var(--surface) 0%, rgba(180,140,80,0.06) 100%)',
+                      borderRadius: 12,
+                      padding: '18px 16px',
+                      border: '1px solid rgba(180,140,80,0.4)',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+                      <span style={{ fontSize: 28 }}>🪵</span>
+                      <div>
+                        <p style={{ fontSize: 15, fontWeight: 800, color: 'var(--text)', lineHeight: 1.2 }}>
+                          {trophy.title}
+                        </p>
+                        <p style={{ fontSize: 12, color: 'rgba(180,140,80,0.9)', fontWeight: 600, marginTop: 2 }}>
+                          Испытание: Бросить курить
+                        </p>
+                      </div>
+                    </div>
+                    <p style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.6, marginBottom: 8 }}>
+                      {trophy.description}
+                    </p>
+                    <p style={{ fontSize: 11, color: 'var(--muted)' }}>
+                      {new Date(trophy.unlocked_at).toLocaleDateString('ru-RU', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric',
+                      })}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* ─── История целей ─── */}
           <div>

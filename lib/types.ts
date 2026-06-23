@@ -127,6 +127,19 @@ export interface OfficialTrial {
   updated_at: string
 }
 
+// TABLE: official_trial_trophies
+export interface OfficialTrialTrophy {
+  id: string
+  user_id: string
+  trial_id: string
+  trophy_key: string
+  tier: string
+  title: string
+  description: string
+  unlocked_at: string
+  created_at: string
+}
+
 // TABLE: official_trial_daily_logs
 export interface OfficialTrialDailyLog {
   id: string
