@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import type { OfficialTrial } from '@/lib/types'
 
 const COMING_SOON = [
   { title: 'Меньше соцсетей', emoji: '📵' },
@@ -13,6 +14,15 @@ export default async function TrialsPage() {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) redirect('/auth')
+
+  const { data: activeTrialRaw } = await supabase
+    .from('official_trials')
+    .select('id, trial_key, title, current_day')
+    .eq('user_id', user.id)
+    .eq('status', 'active')
+    .maybeSingle()
+
+  const activeTrial = activeTrialRaw as Pick<OfficialTrial, 'id' | 'trial_key' | 'title' | 'current_day'> | null
 
   return (
     <div className="app-shell">
@@ -65,7 +75,7 @@ export default async function TrialsPage() {
 
         <div style={{ padding: '20px 16px', display: 'flex', flexDirection: 'column', gap: 14 }}>
 
-          {/* Активная карточка */}
+          {/* Карточка "Бросить курить" — активная или стартовая */}
           <div
             style={{
               background: 'var(--surface)',
@@ -76,54 +86,107 @@ export default async function TrialsPage() {
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
               <span style={{ fontSize: 26 }}>🚭</span>
-              <p style={{ fontSize: 18, fontWeight: 800, color: 'var(--text)' }}>
-                Бросить курить
-              </p>
+              <div>
+                {activeTrial && activeTrial.trial_key === 'smoking' ? (
+                  <>
+                    <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent)', marginBottom: 2 }}>
+                      Активно
+                    </p>
+                    <p style={{ fontSize: 18, fontWeight: 800, color: 'var(--text)' }}>
+                      Бросить курить
+                    </p>
+                  </>
+                ) : (
+                  <p style={{ fontSize: 18, fontWeight: 800, color: 'var(--text)' }}>
+                    Бросить курить
+                  </p>
+                )}
+              </div>
             </div>
 
-            <p style={{ fontSize: 14, color: 'var(--muted)', lineHeight: 1.65, marginBottom: 14 }}>
-              Персональный путь, который поможет разобраться с привычкой, триггерами и постепенно выйти из зависимости.
-            </p>
-
-            {/* Теги */}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 18 }}>
-              {['Никотин', 'Ритуал', 'Стресс', '7 / 30 / 90 дней'].map((tag) => (
-                <span
-                  key={tag}
+            {activeTrial && activeTrial.trial_key === 'smoking' ? (
+              <>
+                {/* Активное состояние */}
+                <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+                  <span
+                    style={{
+                      fontSize: 12, fontWeight: 600,
+                      color: 'var(--muted)',
+                      background: 'rgba(255,255,255,0.06)',
+                      border: '1px solid var(--border)',
+                      borderRadius: 20, padding: '3px 10px',
+                    }}
+                  >
+                    День {activeTrial.current_day}
+                  </span>
+                </div>
+                <p style={{ fontSize: 14, color: 'var(--muted)', lineHeight: 1.65, marginBottom: 18 }}>
+                  Испытание уже идёт. Продолжай путь в сегодняшних миссиях.
+                </p>
+                <a
+                  href="/personalization"
                   style={{
-                    fontSize: 11,
-                    fontWeight: 600,
-                    color: 'var(--accent)',
-                    background: 'rgba(124,92,252,0.12)',
-                    border: '1px solid rgba(124,92,252,0.25)',
-                    borderRadius: 20,
-                    padding: '3px 10px',
-                    letterSpacing: '0.03em',
+                    display: 'block',
+                    width: '100%',
+                    padding: '13px',
+                    borderRadius: 12,
+                    background: 'var(--accent)',
+                    color: '#fff',
+                    fontSize: 15,
+                    fontWeight: 700,
+                    textAlign: 'center',
+                    textDecoration: 'none',
+                    boxSizing: 'border-box',
                   }}
                 >
-                  {tag}
-                </span>
-              ))}
-            </div>
-
-            <a
-              href="/trials/smoking"
-              style={{
-                display: 'block',
-                width: '100%',
-                padding: '13px',
-                borderRadius: 12,
-                background: 'var(--accent)',
-                color: '#fff',
-                fontSize: 15,
-                fontWeight: 700,
-                textAlign: 'center',
-                textDecoration: 'none',
-                boxSizing: 'border-box',
-              }}
-            >
-              Начать опрос
-            </a>
+                  Открыть испытание
+                </a>
+              </>
+            ) : (
+              <>
+                {/* Стартовое состояние */}
+                <p style={{ fontSize: 14, color: 'var(--muted)', lineHeight: 1.65, marginBottom: 14 }}>
+                  Персональный путь, который поможет разобраться с привычкой, триггерами и постепенно выйти из зависимости.
+                </p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 18 }}>
+                  {['Никотин', 'Ритуал', 'Стресс', '7 / 30 / 90 дней'].map((tag) => (
+                    <span
+                      key={tag}
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 600,
+                        color: 'var(--accent)',
+                        background: 'rgba(124,92,252,0.12)',
+                        border: '1px solid rgba(124,92,252,0.25)',
+                        borderRadius: 20,
+                        padding: '3px 10px',
+                        letterSpacing: '0.03em',
+                      }}
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+                <a
+                  href="/trials/smoking"
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    padding: '13px',
+                    borderRadius: 12,
+                    background: 'var(--accent)',
+                    color: '#fff',
+                    fontSize: 15,
+                    fontWeight: 700,
+                    textAlign: 'center',
+                    textDecoration: 'none',
+                    boxSizing: 'border-box',
+                  }}
+                >
+                  Начать опрос
+                </a>
+              </>
+            )}
           </div>
 
           {/* Заголовок раздела */}

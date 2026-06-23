@@ -190,15 +190,113 @@ const EMPTY: Answers = {
 
 const CUSTOM_OPTION = 'Добавить свой ответ'
 
-function step2Placeholder(step1: string[]): string {
-  if (step1.length > 1) return 'Например: сигареты утром, электронка в течение дня'
-  if (step1.includes('Сигареты')) return 'Например: 8–12 сигарет в день, иногда больше'
-  if (step1.includes('Электронки / одноразки')) return 'Например: электронка почти весь день, около 30–40 затяжек'
-  if (step1.includes('Вейп')) return 'Например: электронка почти весь день, около 30–40 затяжек'
-  if (step1.includes('Кальян')) return 'Например: 1–2 раза в неделю, обычно по выходным'
-  if (step1.includes('Никотиновые смеси / снюс')) return 'Например: 5–6 раз в день'
-  if (step1.includes('Сам ритуал курения')) return 'Например: несколько раз в день хочется просто выйти и подержать что-то в руке'
-  return 'Например: опиши свой режим употребления'
+// ── Step 2 dynamic config ─────────────────────────────────────
+const MAIN_TYPES = [
+  'Сигареты',
+  'Электронки / одноразки',
+  'Вейп',
+  'Кальян',
+  'Никотиновые смеси / снюс',
+  'Сам ритуал курения',
+]
+const ECIG_VAPE = ['Электронки / одноразки', 'Вейп']
+
+type Step2Config = { question: string; options: string[]; placeholder: string }
+
+function getStep2Config(step1: string[]): Step2Config {
+  const isCigs     = step1.includes('Сигареты')
+  const isEcigVape = step1.some((s) => ECIG_VAPE.includes(s))
+  const isHookah   = step1.includes('Кальян')
+  const isSnus     = step1.includes('Никотиновые смеси / снюс')
+  const isRitual   = step1.includes('Сам ритуал курения')
+
+  const mainCount = [isCigs, isEcigVape, isHookah, isSnus, isRitual].filter(Boolean).length
+
+  if (mainCount > 1) {
+    const opts: string[] = []
+    if (isCigs)     opts.push('Сигареты')
+    if (isEcigVape) opts.push('Электронки / вейп')
+    if (isHookah)   opts.push('Кальян')
+    if (isSnus)     opts.push('Снюс / никотиновые смеси')
+    if (isRitual)   opts.push('Сам ритуал')
+    opts.push('Добавить свой ответ')
+    return {
+      question: 'Что сейчас занимает больше всего места в твоём дне?',
+      options: opts,
+      placeholder: 'Например: сигареты утром, электронка в течение дня',
+    }
+  }
+
+  if (isCigs) return {
+    question: 'Сколько сигарет в день?',
+    options: ['1–5', '6–10', '11–20', '20+', 'Добавить свой ответ'],
+    placeholder: 'Например: 8–12 сигарет в день, иногда больше',
+  }
+
+  if (isEcigVape) return {
+    question: 'Как часто ты используешь электронку / вейп?',
+    options: [
+      'Редко, несколько раз в день',
+      'Периодами в течение дня',
+      'Каждый час',
+      'Почти постоянно под рукой',
+      'В основном в компании / на отдыхе',
+      'Добавить свой ответ',
+    ],
+    placeholder: 'Например: электронка почти весь день, около 30–40 затяжек',
+  }
+
+  if (isHookah) return {
+    question: 'Как часто ты куришь кальян?',
+    options: [
+      'Раз в месяц или реже',
+      'Несколько раз в месяц',
+      'Раз в неделю',
+      'Несколько раз в неделю',
+      'Почти каждый день',
+      'Добавить свой ответ',
+    ],
+    placeholder: 'Например: 1–2 раза в неделю, обычно по выходным',
+  }
+
+  if (isSnus) return {
+    question: 'Как часто используешь никотиновые смеси / снюс?',
+    options: [
+      '1–2 раза в день',
+      '3–5 раз в день',
+      '6–10 раз в день',
+      '10+ раз в день',
+      'Почти постоянно',
+      'Добавить свой ответ',
+    ],
+    placeholder: 'Например: 5–6 раз в день',
+  }
+
+  if (isRitual) return {
+    question: 'Как часто появляется сам ритуал?',
+    options: [
+      'Несколько раз в неделю',
+      '1–2 раза в день',
+      'Несколько раз в день',
+      'Почти каждый день',
+      'Добавить свой ответ',
+    ],
+    placeholder: 'Например: несколько раз в день хочется просто выйти и подержать что-то в руке',
+  }
+
+  // Fallback: only "Другое" or nothing selected yet
+  return {
+    question: 'Сколько сейчас употребляешь?',
+    options: [
+      '1–5 раз в день',
+      '6–10 раз в день',
+      '11–20 раз в день',
+      '20+ раз в день',
+      'Почти постоянно',
+      'Добавить свой ответ',
+    ],
+    placeholder: 'Например: опиши свой режим употребления',
+  }
 }
 
 // ── Profile detector ──────────────────────────────────────────
@@ -287,13 +385,23 @@ export default function SmokingTrialPage() {
   function toggle(key: keyof Answers, option: string, multi: boolean) {
     setAnswers((prev) => {
       const cur = prev[key]
+      let next: Answers
       if (multi && Array.isArray(cur)) {
-        return {
+        next = {
           ...prev,
           [key]: cur.includes(option) ? cur.filter((x) => x !== option) : [...cur, option],
         }
+      } else {
+        next = { ...prev, [key]: option }
       }
-      return { ...prev, [key]: option }
+      // If step1 changed, reset step2 if the current answer is no longer in the new config
+      if (key === 'step1') {
+        const newConfig = getStep2Config(next.step1 as string[])
+        if (next.step2 !== '' && !newConfig.options.includes(next.step2)) {
+          next = { ...next, step2: '', step2custom: '' }
+        }
+      }
+      return next
     })
   }
 
@@ -504,6 +612,11 @@ export default function SmokingTrialPage() {
   const multi = currentStep.multi
   const key = currentStep.key
 
+  // Step 2 is fully dynamic based on step 1 selections
+  const step2Cfg = getStep2Config(answers.step1)
+  const displayQuestion = step === 2 ? step2Cfg.question : currentStep.question
+  const displayOptions   = step === 2 ? step2Cfg.options  : currentStep.options
+
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
       {/* Прогресс */}
@@ -543,7 +656,7 @@ export default function SmokingTrialPage() {
             lineHeight: 1.3, marginBottom: 6,
           }}
         >
-          {currentStep.question}
+          {displayQuestion}
         </h2>
         {multi && (
           <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 20 }}>Можно выбрать несколько</p>
@@ -551,7 +664,7 @@ export default function SmokingTrialPage() {
         {!multi && <div style={{ marginBottom: 20 }} />}
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {currentStep.options.map((opt) => {
+          {displayOptions.map((opt) => {
             const active = isSelected(key, opt)
             return (
               <button
@@ -595,7 +708,7 @@ export default function SmokingTrialPage() {
               autoFocus
               className="input"
               type="text"
-              placeholder={step2Placeholder(answers.step1)}
+              placeholder={step2Cfg.placeholder}
               value={answers.step2custom}
               onChange={(e) =>
                 setAnswers((prev) => ({ ...prev, step2custom: e.target.value }))
