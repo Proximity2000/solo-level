@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { getSmokingTrialMission, getEffectiveSmokingTrialDay } from '@/lib/smoking-trial'
 
 export type CompleteTrialMissionResult =
   | { success: true }
@@ -31,37 +32,50 @@ export async function completeTrialMission(): Promise<CompleteTrialMissionResult
     return { error: 'Активное испытание не найдено.' }
   }
 
-  // Check if already completed today — return early, not an error
-  const { data: existing } = await supabase
+  // Fetch the latest completed log to determine effective day and duplicate check
+  const { data: latestLog } = await supabase
     .from('official_trial_daily_logs')
-    .select('id, completed_at')
+    .select('log_date, day_number, completed_at')
     .eq('trial_id', trial.id)
-    .eq('log_date', today)
+    .order('log_date', { ascending: false })
+    .limit(1)
     .maybeSingle()
 
-  if (existing?.completed_at) {
+  // Already completed today — idempotent early return
+  if (latestLog?.log_date === today && latestLog.completed_at) {
     return { alreadyCompleted: true }
   }
 
-  // Upsert: safe if the row already exists but completed_at is null
-  const { error } = await supabase
+  // Compute which day the user is actually completing
+  const effectiveDay = getEffectiveSmokingTrialDay(trial, latestLog, today)
+  const mission = getSmokingTrialMission(effectiveDay)
+
+  // Upsert the completion row (safe on repeated submit)
+  const { error: logError } = await supabase
     .from('official_trial_daily_logs')
     .upsert(
       {
         trial_id:      trial.id,
         user_id:       user.id,
         log_date:      today,
-        day_number:    trial.current_day,
-        mission_key:   'smoking_day_1_observation',
-        mission_title: 'Разведка привычки',
+        day_number:    effectiveDay,
+        mission_key:   mission.mission_key,
+        mission_title: mission.title,
         completed_at:  new Date().toISOString(),
       },
       { onConflict: 'trial_id,log_date' }
     )
 
-  if (error) {
+  if (logError) {
     return { error: 'Не удалось сохранить. Попробуй ещё раз.' }
   }
+
+  // Sync official_trials.current_day to the just-completed effective day
+  await supabase
+    .from('official_trials')
+    .update({ current_day: effectiveDay })
+    .eq('id', trial.id)
+  // Non-fatal if this update fails — log is the source of truth for progression
 
   return { success: true }
 }

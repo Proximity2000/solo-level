@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { getEffectiveSmokingTrialDay } from '@/lib/smoking-trial'
 import type { OfficialTrial } from '@/lib/types'
 
 const COMING_SOON = [
@@ -23,6 +24,22 @@ export default async function TrialsPage() {
     .maybeSingle()
 
   const activeTrial = activeTrialRaw as Pick<OfficialTrial, 'id' | 'trial_key' | 'title' | 'current_day'> | null
+
+  const today = new Date().toISOString().split('T')[0]
+
+  const { data: latestTrialLog } = activeTrial
+    ? await supabase
+        .from('official_trial_daily_logs')
+        .select('log_date, day_number, completed_at')
+        .eq('trial_id', activeTrial.id)
+        .order('log_date', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+    : { data: null }
+
+  const effectiveTrialDay = activeTrial
+    ? getEffectiveSmokingTrialDay(activeTrial, latestTrialLog, today)
+    : 1
 
   return (
     <div className="app-shell">
@@ -117,7 +134,7 @@ export default async function TrialsPage() {
                       borderRadius: 20, padding: '3px 10px',
                     }}
                   >
-                    День {activeTrial.current_day}
+                    День {effectiveTrialDay}
                   </span>
                 </div>
                 <p style={{ fontSize: 14, color: 'var(--muted)', lineHeight: 1.65, marginBottom: 18 }}>

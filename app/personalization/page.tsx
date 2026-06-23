@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import WorkloadSettings from '@/app/profile/WorkloadSettings'
 import FocusSpheresSettings from './FocusSpheresSettings'
+import { getEffectiveSmokingTrialDay } from '@/lib/smoking-trial'
 import type { OfficialTrial } from '@/lib/types'
 
 export default async function PersonalizationPage() {
@@ -26,6 +27,22 @@ export default async function PersonalizationPage() {
     .maybeSingle()
 
   const activeTrial = activeTrialRaw as OfficialTrial | null
+
+  const today = new Date().toISOString().split('T')[0]
+
+  const { data: latestTrialLog } = activeTrial
+    ? await supabase
+        .from('official_trial_daily_logs')
+        .select('log_date, day_number, completed_at')
+        .eq('trial_id', activeTrial.id)
+        .order('log_date', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+    : { data: null }
+
+  const effectiveTrialDay = activeTrial
+    ? getEffectiveSmokingTrialDay(activeTrial, latestTrialLog, today)
+    : 1
 
   return (
     <div className="app-shell">
@@ -142,7 +159,7 @@ export default async function PersonalizationPage() {
                       borderRadius: 20, padding: '3px 10px',
                     }}
                   >
-                    День {activeTrial.current_day}
+                    День {effectiveTrialDay}
                   </span>
                   <span
                     style={{
@@ -153,7 +170,7 @@ export default async function PersonalizationPage() {
                       borderRadius: 20, padding: '3px 10px',
                     }}
                   >
-                    До первого трофея: {Math.max(0, 7 - activeTrial.current_day)} дн.
+                    До первого трофея: {Math.max(0, 7 - effectiveTrialDay)} дн.
                   </span>
                 </div>
                 <a

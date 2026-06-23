@@ -6,10 +6,12 @@ import { completeTrialMission } from './actions'
 
 type Props = {
   currentDay: number
+  missionTitle: string
+  missionDescription: string
   isCompleted: boolean
 }
 
-export default function TrialMissionCard({ currentDay, isCompleted }: Props) {
+export default function TrialMissionCard({ currentDay, missionTitle, missionDescription, isCompleted }: Props) {
   const router = useRouter()
   const [completed, setCompleted] = useState(isCompleted)
   const [showConfirm, setShowConfirm] = useState(false)
@@ -62,11 +64,10 @@ export default function TrialMissionCard({ currentDay, isCompleted }: Props) {
           }}
         >
           <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>
-            Разведка привычки
+            {missionTitle}
           </p>
           <p style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.65 }}>
-            Сегодня отследи 3 момента, когда захотелось курить: время, место и причина.
-            Не борись с собой — наша задача увидеть систему.
+            {missionDescription}
           </p>
         </div>
 
@@ -92,7 +93,7 @@ export default function TrialMissionCard({ currentDay, isCompleted }: Props) {
               </p>
             </div>
             <p style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.55 }}>
-              Ты сделал шаг в испытании. Завтра откроется следующий этап.
+              Ты сделал шаг в испытании. Следующая миссия откроется завтра.
             </p>
           </div>
         ) : (

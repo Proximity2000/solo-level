@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { getEffectiveSmokingTrialDay } from '@/lib/smoking-trial'
 import type { UserSnapshot, UserStats, UserGoal, OfficialTrial } from '@/lib/types'
 
 const ACTIVITY_LABELS: Record<string, string> = {
@@ -95,6 +96,22 @@ export default async function LegendPage() {
   const typedStats = stats as UserStats
   const typedGoals = (goals ?? []) as UserGoal[]
   const activeTrial = activeTrialRaw as OfficialTrial | null
+
+  const today = new Date().toISOString().split('T')[0]
+
+  const { data: latestTrialLog } = activeTrial
+    ? await supabase
+        .from('official_trial_daily_logs')
+        .select('log_date, day_number, completed_at')
+        .eq('trial_id', activeTrial.id)
+        .order('log_date', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+    : { data: null }
+
+  const effectiveTrialDay = activeTrial
+    ? getEffectiveSmokingTrialDay(activeTrial, latestTrialLog, today)
+    : 1
 
   return (
     <div className="app-shell">
@@ -249,7 +266,7 @@ export default async function LegendPage() {
                       {activeTrial.title}
                     </p>
                     <p style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 600, marginTop: 2 }}>
-                      День {activeTrial.current_day}
+                      День {effectiveTrialDay}
                     </p>
                   </div>
                 </div>
@@ -267,7 +284,7 @@ export default async function LegendPage() {
                     🪵 Деревянная сломанная сигарета
                   </p>
                   <p style={{ fontSize: 12, color: 'var(--muted)', marginTop: 6 }}>
-                    До первого трофея: {Math.max(0, 7 - activeTrial.current_day)} дн.
+                    До первого трофея: {Math.max(0, 7 - effectiveTrialDay)} дн.
                   </p>
                 </div>
               </div>

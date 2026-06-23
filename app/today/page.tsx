@@ -5,6 +5,7 @@ import { completeMission } from '@/lib/actions/missions'
 import { getProgressToNextLevel } from '@/lib/xp'
 import MissionCard from '@/components/MissionCard'
 import TrialMissionCard from './TrialMissionCard'
+import { getSmokingTrialMission, getEffectiveSmokingTrialDay } from '@/lib/smoking-trial'
 import type { DailyMission, Task } from '@/lib/types'
 
 export default async function TodayPage() {
@@ -82,15 +83,25 @@ export default async function TodayPage() {
     .eq('status', 'active')
     .maybeSingle()
 
-  // 5b. Выполнение миссии испытания за сегодня
-  const { data: trialLog } = activeTrial
+  // 5b. Последний лог испытания (для расчёта эффективного дня)
+  const { data: latestTrialLog } = activeTrial
     ? await supabase
         .from('official_trial_daily_logs')
-        .select('id, completed_at')
+        .select('log_date, day_number, completed_at')
         .eq('trial_id', activeTrial.id)
-        .eq('log_date', today)
+        .order('log_date', { ascending: false })
+        .limit(1)
         .maybeSingle()
     : { data: null }
+
+  // 5c. Эффективный день и миссия
+  const effectiveTrialDay = activeTrial
+    ? getEffectiveSmokingTrialDay(activeTrial, latestTrialLog, today)
+    : 1
+  const trialMission = getSmokingTrialMission(effectiveTrialDay)
+  const isTrialCompletedToday = !!(
+    latestTrialLog?.log_date === today && latestTrialLog?.completed_at
+  )
 
   // 6. XP прогресс
   const { current: xpCurrent, needed: xpNeeded, progress } = getProgressToNextLevel(
@@ -281,8 +292,10 @@ export default async function TodayPage() {
               Испытание
             </p>
             <TrialMissionCard
-              currentDay={activeTrial.current_day}
-              isCompleted={!!trialLog?.completed_at}
+              currentDay={effectiveTrialDay}
+              missionTitle={trialMission.title}
+              missionDescription={trialMission.description}
+              isCompleted={isTrialCompletedToday}
             />
           </div>
         )}
