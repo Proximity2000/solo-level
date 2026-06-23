@@ -4,6 +4,7 @@ import WorkloadSettings from '@/app/profile/WorkloadSettings'
 import FocusSpheresSettings from './FocusSpheresSettings'
 import { getEffectiveSmokingTrialDay } from '@/lib/smoking-trial'
 import { getSmokingTrialProgress } from '@/lib/smoking-trial-milestones'
+import AbandonTrialButton from './AbandonTrialButton'
 import type { OfficialTrial } from '@/lib/types'
 
 export default async function PersonalizationPage() {
@@ -251,6 +252,7 @@ export default async function PersonalizationPage() {
                 >
                   Открыть испытание
                 </a>
+                <AbandonTrialButton />
               </div>
             ) : (
               <div

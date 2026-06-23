@@ -142,6 +142,24 @@ export default async function LegendPage() {
   const allMilestones = getSmokingTrialMilestones()
   const nextMilestoneForPath = getNextSmokingMilestone(pathDisplayDay)
 
+  // заброшенные испытания
+  const { data: abandonedTrialsRaw } = await supabase
+    .from('official_trials')
+    .select('id, trial_key, title, started_at, completed_at')
+    .eq('user_id', user.id)
+    .eq('status', 'abandoned')
+    .order('completed_at', { ascending: false })
+
+  const abandonedTrials = (abandonedTrialsRaw ?? []) as Pick<
+    OfficialTrial,
+    'id' | 'trial_key' | 'title' | 'started_at' | 'completed_at'
+  >[]
+
+  // Tier → emoji lookup (for abandoned trial trophy display)
+  const TIER_EMOJI: Record<string, string> = {
+    wood: '🪵', bronze: '🟤', silver: '⬜', gold: '🟡',
+  }
+
   return (
     <div className="app-shell">
       <div className="page-content" style={{ padding: '0 0 80px' }}>
@@ -491,6 +509,113 @@ export default async function LegendPage() {
                     </p>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* ─── История испытаний ─── */}
+          {abandonedTrials.length > 0 && (
+            <div>
+              <SectionTitle>История испытаний</SectionTitle>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {abandonedTrials.map((trial) => {
+                  const trialTrophies = trophies.filter((t) => t.trial_id === trial.id)
+                  return (
+                    <div
+                      key={trial.id}
+                      style={{
+                        background: 'var(--surface)',
+                        borderRadius: 12,
+                        padding: '16px',
+                        border: '1px solid var(--border)',
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'flex-start',
+                          marginBottom: 8,
+                        }}
+                      >
+                        <div>
+                          <p style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', lineHeight: 1.2 }}>
+                            {trial.title}
+                          </p>
+                          <p style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>
+                            Испытание завершено
+                          </p>
+                        </div>
+                        <span style={{ fontSize: 22, flexShrink: 0 }}>🚭</span>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: 6, marginBottom: 10, flexWrap: 'wrap' }}>
+                        <span
+                          style={{
+                            fontSize: 11,
+                            color: 'var(--muted)',
+                            background: 'rgba(255,255,255,0.05)',
+                            border: '1px solid var(--border)',
+                            borderRadius: 20,
+                            padding: '2px 8px',
+                          }}
+                        >
+                          Начало:{' '}
+                          {new Date(trial.started_at).toLocaleDateString('ru-RU', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                          })}
+                        </span>
+                        {trial.completed_at && (
+                          <span
+                            style={{
+                              fontSize: 11,
+                              color: 'var(--muted)',
+                              background: 'rgba(255,255,255,0.05)',
+                              border: '1px solid var(--border)',
+                              borderRadius: 20,
+                              padding: '2px 8px',
+                            }}
+                          >
+                            Конец:{' '}
+                            {new Date(trial.completed_at).toLocaleDateString('ru-RU', {
+                              day: 'numeric',
+                              month: 'short',
+                              year: 'numeric',
+                            })}
+                          </span>
+                        )}
+                      </div>
+
+                      {trialTrophies.length > 0 && (
+                        <div>
+                          <p style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 6 }}>
+                            Полученные трофеи
+                          </p>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                            {trialTrophies.map((t) => (
+                              <span
+                                key={t.id}
+                                style={{
+                                  fontSize: 12,
+                                  fontWeight: 600,
+                                  color: 'rgba(180,140,80,0.9)',
+                                  background: 'rgba(180,140,80,0.08)',
+                                  border: '1px solid rgba(180,140,80,0.25)',
+                                  borderRadius: 20,
+                                  padding: '3px 10px',
+                                }}
+                              >
+                                {TIER_EMOJI[t.tier] ?? '🏅'} {t.title}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             </div>
           )}
