@@ -6,7 +6,7 @@ import { getProgressToNextLevel } from '@/lib/xp'
 import MissionCard from '@/components/MissionCard'
 import TrialMissionCard from './TrialMissionCard'
 import { getSmokingTrialMission, getEffectiveSmokingTrialDay } from '@/lib/smoking-trial'
-import { getSmokingTrialProgress } from '@/lib/smoking-trial-milestones'
+import { getSmokingTrialProgress, getSmokingTrialTrophyForDay } from '@/lib/smoking-trial-milestones'
 import type { DailyMission, Task } from '@/lib/types'
 
 export default async function TodayPage() {
@@ -104,8 +104,11 @@ export default async function TodayPage() {
     latestTrialLog?.log_date === today && latestTrialLog?.completed_at
   )
 
-  // 5d. Day 7 celebration: completed today on day 7
-  const showTrophyCelebration = isTrialCompletedToday && effectiveTrialDay === 7
+  // 5d. Milestone trophy celebration: completed today on a milestone day (7/30/90/365)
+  const todayMilestoneTrophy = isTrialCompletedToday
+    ? getSmokingTrialTrophyForDay(effectiveTrialDay)
+    : null
+  const showTrophyCelebration = todayMilestoneTrophy !== null
 
   // 5e. Milestone progress (for compact progress line on Today)
   const trialMilestoneProgress = activeTrial ? getSmokingTrialProgress(effectiveTrialDay) : null
@@ -314,8 +317,8 @@ export default async function TodayPage() {
               </p>
             )}
 
-            {/* ── Day 7 Trophy Celebration ── */}
-            {showTrophyCelebration && (
+            {/* ── Milestone Trophy Celebration ── */}
+            {showTrophyCelebration && todayMilestoneTrophy && (
               <div
                 style={{
                   marginTop: 12,
@@ -335,16 +338,16 @@ export default async function TodayPage() {
                     marginBottom: 10,
                   }}
                 >
-                  Первый трофей получен
+                  Трофей получен
                 </p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-                  <span style={{ fontSize: 32 }}>🪵</span>
+                  <span style={{ fontSize: 32 }}>{todayMilestoneTrophy.emoji}</span>
                   <p style={{ fontSize: 16, fontWeight: 800, color: 'var(--text)', lineHeight: 1.3 }}>
-                    Деревянная сломанная сигарета
+                    {todayMilestoneTrophy.title}
                   </p>
                 </div>
                 <p style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.65, marginBottom: 16 }}>
-                  Ты прошёл первую неделю. Это не финиш — это доказательство, что путь уже начался.
+                  Ты дошёл до нового рубежа. Путь продолжается.
                 </p>
                 <a
                   href="/legend"

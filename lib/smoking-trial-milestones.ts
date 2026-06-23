@@ -73,6 +73,27 @@ const MILESTONES: SmokingMilestone[] = [
   },
 ]
 
+// ── Trophy descriptions (one per milestone day) ──────────────
+// Central source of truth — used by getSmokingTrialTrophyForDay and
+// lib/trial-trophies.ts so descriptions are never duplicated.
+
+const TROPHY_DESCRIPTIONS: Record<number, string> = {
+  7:   'Первая неделя пути. Ты начал замечать привычку и выбирать осознанность вместо автомата.',
+  30:  'Тридцать дней пути. Ты уже не просто замечаешь привычку — ты меняешь её место в своей жизни.',
+  90:  'Девяносто дней пути. Новый способ жить становится устойчивее, а старый автоматизм — слабее.',
+  365: 'Год пути. Ты доказал себе, что большие изменения строятся из честных маленьких шагов.',
+}
+
+// ── SmokingTrophyForDay ───────────────────────────────────────
+
+export type SmokingTrophyForDay = {
+  trophy_key: string
+  tier: SmokingMilestoneTier
+  title: string
+  description: string
+  emoji: string
+}
+
 // ── Helpers ──────────────────────────────────────────────────
 
 /** Returns all milestone definitions in ascending day order. */
@@ -109,6 +130,27 @@ export function getNextSmokingMilestone(dayNumber: number): SmokingMilestone | n
  *   Day 30: next=90, prev=30, range=60, earned=0  → 0%,   daysRemaining=60
  *   Day 365: completed                            → 100%, daysRemaining=0
  */
+/**
+ * Returns the trophy definition to unlock when completing a specific day,
+ * or null if the day is not a milestone day.
+ *
+ * Only returns a value for exactly: 7, 30, 90, 365.
+ * All other days return null — no trophy is created.
+ */
+export function getSmokingTrialTrophyForDay(dayNumber: number): SmokingTrophyForDay | null {
+  const milestone = MILESTONES.find((m) => m.day === dayNumber)
+  if (!milestone) return null
+  const description = TROPHY_DESCRIPTIONS[dayNumber]
+  if (!description) return null
+  return {
+    trophy_key:  milestone.trophy_key,
+    tier:        milestone.tier,
+    title:       milestone.title,
+    description,
+    emoji:       milestone.emoji,
+  }
+}
+
 export function getSmokingTrialProgress(dayNumber: number): SmokingTrialProgress {
   const nextMilestone = getNextSmokingMilestone(dayNumber)
   const previousMilestone = getCurrentSmokingMilestone(dayNumber)
