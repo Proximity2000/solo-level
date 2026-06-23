@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getEffectiveSmokingTrialDay } from '@/lib/smoking-trial'
+import { getSmokingTrialMilestones, getNextSmokingMilestone } from '@/lib/smoking-trial-milestones'
 import type { UserSnapshot, UserStats, UserGoal, OfficialTrial, OfficialTrialTrophy } from '@/lib/types'
 
 const ACTIVITY_LABELS: Record<string, string> = {
@@ -121,6 +122,25 @@ export default async function LegendPage() {
     .order('unlocked_at', { ascending: false })
 
   const trophies = (trophiesRaw ?? []) as OfficialTrialTrophy[]
+
+  // Путь испытания — show when there is an active smoking trial or any trophies
+  const showSmokingPath =
+    activeTrial?.trial_key === 'smoking' || trophies.length > 0
+
+  // Earned trophy keys for milestone state rendering
+  const earnedTrophyKeys = new Set(trophies.map((t) => t.trophy_key))
+
+  // Infer display day when no active trial (from highest earned trophy tier)
+  const TIER_TO_DAY: Record<string, number> = { wood: 7, bronze: 30, silver: 90, gold: 365 }
+  const inferredDay = trophies.reduce(
+    (max, t) => Math.max(max, TIER_TO_DAY[t.tier] ?? 0),
+    0
+  )
+  const pathDisplayDay =
+    activeTrial?.trial_key === 'smoking' ? effectiveTrialDay : inferredDay
+
+  const allMilestones = getSmokingTrialMilestones()
+  const nextMilestoneForPath = getNextSmokingMilestone(pathDisplayDay)
 
   return (
     <div className="app-shell">
@@ -279,23 +299,31 @@ export default async function LegendPage() {
                     </p>
                   </div>
                 </div>
-                <div
-                  style={{
-                    background: 'rgba(124,92,252,0.08)',
-                    borderRadius: 10,
-                    padding: '12px 14px',
-                    marginBottom: 10,
-                    border: '1px solid rgba(124,92,252,0.2)',
-                  }}
-                >
-                  <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 2 }}>Первый трофей</p>
-                  <p style={{ fontSize: 14, color: 'var(--text)', fontWeight: 600 }}>
-                    🪵 Деревянная сломанная сигарета
-                  </p>
-                  <p style={{ fontSize: 12, color: 'var(--muted)', marginTop: 6 }}>
-                    До первого трофея: {Math.max(0, 7 - effectiveTrialDay)} дн.
-                  </p>
-                </div>
+                {(() => {
+                  const next = getNextSmokingMilestone(effectiveTrialDay)
+                  if (!next) return null
+                  return (
+                    <div
+                      style={{
+                        background: 'rgba(124,92,252,0.08)',
+                        borderRadius: 10,
+                        padding: '12px 14px',
+                        marginBottom: 10,
+                        border: '1px solid rgba(124,92,252,0.2)',
+                      }}
+                    >
+                      <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 2 }}>
+                        Следующий трофей
+                      </p>
+                      <p style={{ fontSize: 14, color: 'var(--text)', fontWeight: 600 }}>
+                        {next.emoji} {next.title}
+                      </p>
+                      <p style={{ fontSize: 12, color: 'var(--muted)', marginTop: 6 }}>
+                        До него: {next.day - effectiveTrialDay} дн.
+                      </p>
+                    </div>
+                  )
+                })()}
               </div>
             ) : (
               <div
@@ -313,6 +341,117 @@ export default async function LegendPage() {
               </div>
             )}
           </div>
+
+          {/* ─── Путь испытания ─── */}
+          {showSmokingPath && (
+            <div>
+              <SectionTitle>Путь испытания</SectionTitle>
+              <div
+                style={{
+                  background: 'var(--surface)',
+                  borderRadius: 12,
+                  padding: '16px',
+                  border: '1px solid var(--border)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 0,
+                }}
+              >
+                {allMilestones.map((milestone, idx) => {
+                  const isEarned = earnedTrophyKeys.has(milestone.trophy_key)
+                  const isCurrentTarget =
+                    !isEarned && nextMilestoneForPath?.trophy_key === milestone.trophy_key
+                  const isLocked = !isEarned && !isCurrentTarget
+
+                  return (
+                    <div key={milestone.tier}>
+                      {/* Row */}
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 12,
+                          padding: '10px 0',
+                          opacity: isLocked ? 0.35 : 1,
+                        }}
+                      >
+                        {/* Icon */}
+                        <div
+                          style={{
+                            width: 36,
+                            height: 36,
+                            borderRadius: 8,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: 18,
+                            background: isEarned
+                              ? `rgba(${milestone.color.match(/\d+/g)?.slice(0, 3).join(',')},0.15)`
+                              : 'rgba(255,255,255,0.04)',
+                            border: isEarned
+                              ? `1px solid ${milestone.color}`
+                              : isCurrentTarget
+                              ? '1px solid var(--accent)'
+                              : '1px solid var(--border)',
+                            flexShrink: 0,
+                          }}
+                        >
+                          {isEarned ? milestone.emoji : isCurrentTarget ? '◎' : '○'}
+                        </div>
+
+                        {/* Text */}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p
+                            style={{
+                              fontSize: 13,
+                              fontWeight: isEarned || isCurrentTarget ? 700 : 500,
+                              color: isEarned
+                                ? milestone.color
+                                : isCurrentTarget
+                                ? 'var(--text)'
+                                : 'var(--muted)',
+                              lineHeight: 1.2,
+                              marginBottom: 2,
+                            }}
+                          >
+                            {milestone.title}
+                          </p>
+                          <p style={{ fontSize: 11, color: 'var(--muted)' }}>
+                            {milestone.day} {milestone.day === 365 ? 'день' : 'дней'}
+                            {isCurrentTarget && (
+                              <span style={{ color: 'var(--accent)', marginLeft: 6, fontWeight: 600 }}>
+                                · ещё {milestone.day - pathDisplayDay} дн.
+                              </span>
+                            )}
+                          </p>
+                        </div>
+
+                        {/* Status */}
+                        {isEarned && (
+                          <span style={{ fontSize: 12, color: milestone.color, fontWeight: 700, flexShrink: 0 }}>
+                            ✓
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Connector line between rows */}
+                      {idx < allMilestones.length - 1 && (
+                        <div
+                          style={{
+                            marginLeft: 17,
+                            width: 2,
+                            height: 8,
+                            background: 'var(--border)',
+                            borderRadius: 1,
+                          }}
+                        />
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
 
           {/* ─── Трофеи ─── */}
           {trophies.length > 0 && (

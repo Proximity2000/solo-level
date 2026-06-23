@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import WorkloadSettings from '@/app/profile/WorkloadSettings'
 import FocusSpheresSettings from './FocusSpheresSettings'
 import { getEffectiveSmokingTrialDay } from '@/lib/smoking-trial'
+import { getSmokingTrialProgress } from '@/lib/smoking-trial-milestones'
 import type { OfficialTrial } from '@/lib/types'
 
 export default async function PersonalizationPage() {
@@ -44,15 +45,7 @@ export default async function PersonalizationPage() {
     ? getEffectiveSmokingTrialDay(activeTrial, latestTrialLog, today)
     : 1
 
-  // трофей — есть ли у пользователя деревянная сигарета
-  const { data: woodTrophy } = activeTrial
-    ? await supabase
-        .from('official_trial_trophies')
-        .select('id')
-        .eq('trial_id', activeTrial.id)
-        .eq('trophy_key', 'smoking_broken_cigarette')
-        .maybeSingle()
-    : { data: null }
+  const trialProgress = getSmokingTrialProgress(effectiveTrialDay)
 
   return (
     <div className="app-shell">
@@ -159,7 +152,8 @@ export default async function PersonalizationPage() {
                     </p>
                   </div>
                 </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
+                {/* Day chip */}
+                <div style={{ marginBottom: 12 }}>
                   <span
                     style={{
                       fontSize: 12, fontWeight: 600,
@@ -171,30 +165,74 @@ export default async function PersonalizationPage() {
                   >
                     День {effectiveTrialDay}
                   </span>
-                  {woodTrophy ? (
-                    <span
-                      style={{
-                        fontSize: 12, fontWeight: 600,
-                        color: 'rgba(180,140,80,0.9)',
-                        background: 'rgba(180,140,80,0.1)',
-                        border: '1px solid rgba(180,140,80,0.35)',
-                        borderRadius: 20, padding: '3px 10px',
-                      }}
-                    >
-                      🪵 Первый трофей получен
-                    </span>
+                </div>
+
+                {/* Milestone progress block */}
+                <div
+                  style={{
+                    background: 'rgba(255,255,255,0.03)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 10,
+                    padding: '12px 14px',
+                    marginBottom: 14,
+                  }}
+                >
+                  {trialProgress.completed ? (
+                    <p style={{ fontSize: 13, color: 'var(--muted)', fontWeight: 600 }}>
+                      🏆 Золотой путь пройден
+                    </p>
+                  ) : trialProgress.previousMilestone ? (
+                    <>
+                      <p style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 4 }}>
+                        Следующий трофей
+                      </p>
+                      <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 2 }}>
+                        {trialProgress.nextMilestone!.emoji} {trialProgress.nextMilestone!.title}
+                      </p>
+                      <p style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 10 }}>
+                        До него: {trialProgress.daysRemaining} дн.
+                      </p>
+                    </>
                   ) : (
-                    <span
-                      style={{
-                        fontSize: 12, fontWeight: 600,
-                        color: 'var(--muted)',
-                        background: 'rgba(255,255,255,0.06)',
-                        border: '1px solid var(--border)',
-                        borderRadius: 20, padding: '3px 10px',
-                      }}
-                    >
-                      До первого трофея: {Math.max(0, 7 - effectiveTrialDay)} дн.
-                    </span>
+                    <p style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 10 }}>
+                      До первого трофея: {trialProgress.daysRemaining} дн.
+                    </p>
+                  )}
+                  {!trialProgress.completed && (
+                    <>
+                      {/* Game-like progress bar */}
+                      <div
+                        style={{
+                          height: 3,
+                          background: 'rgba(255,255,255,0.08)',
+                          borderRadius: 1,
+                          overflow: 'hidden',
+                        }}
+                      >
+                        <div
+                          style={{
+                            height: '100%',
+                            width: `${trialProgress.progressPercent}%`,
+                            background: trialProgress.nextMilestone!.color,
+                            borderRadius: 1,
+                          }}
+                        />
+                      </div>
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          marginTop: 4,
+                        }}
+                      >
+                        <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)' }}>
+                          {trialProgress.previousMilestone ? `День ${trialProgress.previousMilestone.day}` : 'Старт'}
+                        </span>
+                        <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)' }}>
+                          День {trialProgress.nextMilestone!.day}
+                        </span>
+                      </div>
+                    </>
                   )}
                 </div>
                 <a

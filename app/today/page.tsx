@@ -6,6 +6,7 @@ import { getProgressToNextLevel } from '@/lib/xp'
 import MissionCard from '@/components/MissionCard'
 import TrialMissionCard from './TrialMissionCard'
 import { getSmokingTrialMission, getEffectiveSmokingTrialDay } from '@/lib/smoking-trial'
+import { getSmokingTrialProgress } from '@/lib/smoking-trial-milestones'
 import type { DailyMission, Task } from '@/lib/types'
 
 export default async function TodayPage() {
@@ -105,6 +106,9 @@ export default async function TodayPage() {
 
   // 5d. Day 7 celebration: completed today on day 7
   const showTrophyCelebration = isTrialCompletedToday && effectiveTrialDay === 7
+
+  // 5e. Milestone progress (for compact progress line on Today)
+  const trialMilestoneProgress = activeTrial ? getSmokingTrialProgress(effectiveTrialDay) : null
 
   // 6. XP прогресс
   const { current: xpCurrent, needed: xpNeeded, progress } = getProgressToNextLevel(
@@ -300,6 +304,15 @@ export default async function TodayPage() {
               missionDescription={trialMission.description}
               isCompleted={isTrialCompletedToday}
             />
+
+            {/* ── Compact progress line — hidden during trophy celebration ── */}
+            {!showTrophyCelebration && trialMilestoneProgress?.nextMilestone && (
+              <p style={{ fontSize: 12, color: 'var(--muted)', marginTop: 8, paddingLeft: 2 }}>
+                {trialMilestoneProgress.previousMilestone
+                  ? `До следующего трофея: ${trialMilestoneProgress.daysRemaining} дн.`
+                  : `До первого трофея: ${trialMilestoneProgress.daysRemaining} дн.`}
+              </p>
+            )}
 
             {/* ── Day 7 Trophy Celebration ── */}
             {showTrophyCelebration && (
