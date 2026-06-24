@@ -140,6 +140,36 @@ export interface OfficialTrialTrophy {
   created_at: string
 }
 
+// TABLE: personal_trials
+export type PersonalTrialIntensity = 'soft' | 'medium' | 'focused'
+export type PersonalTrialStatus   = 'active' | 'completed' | 'abandoned'
+
+export interface PersonalTrial {
+  id:            string
+  user_id:       string
+  title:         string
+  why:           string
+  daily_minutes: number
+  intensity:     PersonalTrialIntensity
+  status:        PersonalTrialStatus
+  started_at:    string
+  completed_at:  string | null
+  created_at:    string
+  updated_at:    string
+}
+
+export const PERSONAL_TRIAL_INTENSITY_LABELS: Record<PersonalTrialIntensity, string> = {
+  soft:    'Мягко',
+  medium:  'Средне',
+  focused: 'Собранно',
+}
+
+export const PERSONAL_TRIAL_MINUTES_LABELS: Record<number, string> = {
+  10: 'до 10 мин',
+  30: '15–30 мин',
+  60: '30–60 мин',
+}
+
 // TABLE: official_trial_daily_logs
 export interface OfficialTrialDailyLog {
   id: string

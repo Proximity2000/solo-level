@@ -5,7 +5,9 @@ import FocusSpheresSettings from './FocusSpheresSettings'
 import { getEffectiveSmokingTrialDay } from '@/lib/smoking-trial'
 import { getSmokingTrialProgress } from '@/lib/smoking-trial-milestones'
 import AbandonTrialButton from './AbandonTrialButton'
-import type { OfficialTrial } from '@/lib/types'
+import AbandonPersonalTrialButton from './AbandonPersonalTrialButton'
+import type { OfficialTrial, PersonalTrial } from '@/lib/types'
+import { PERSONAL_TRIAL_INTENSITY_LABELS, PERSONAL_TRIAL_MINUTES_LABELS } from '@/lib/types'
 
 export default async function PersonalizationPage() {
   const supabase = await createClient()
@@ -47,6 +49,16 @@ export default async function PersonalizationPage() {
     : 1
 
   const trialProgress = getSmokingTrialProgress(effectiveTrialDay)
+
+  // Active personal trial
+  const { data: activePersonalTrialRaw } = await supabase
+    .from('personal_trials')
+    .select('*')
+    .eq('user_id', user.id)
+    .eq('status', 'active')
+    .maybeSingle()
+
+  const activePersonalTrial = activePersonalTrialRaw as PersonalTrial | null
 
   return (
     <div className="app-shell">
@@ -299,41 +311,96 @@ export default async function PersonalizationPage() {
             >
               Личное испытание
             </p>
-            <div
-              style={{
-                background: 'var(--surface)',
-                borderRadius: 12,
-                padding: '18px 16px',
-                border: '1px solid var(--border)',
-                opacity: 0.65,
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                <p style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>
-                  Создай личный вызов
+
+            {activePersonalTrial ? (
+              /* ── Active personal trial card ── */
+              <div
+                style={{
+                  background: 'var(--surface)',
+                  borderRadius: 12,
+                  padding: '18px 16px',
+                  border: '1px solid var(--accent)',
+                }}
+              >
+                <p style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 700, marginBottom: 4 }}>
+                  Активно
                 </p>
-                <span
+                <p style={{ fontSize: 16, fontWeight: 800, color: 'var(--text)', marginBottom: 10 }}>
+                  {activePersonalTrial.title}
+                </p>
+
+                {/* Why — one truncated line */}
+                <p
                   style={{
-                    marginLeft: 'auto',
-                    fontSize: 11,
-                    fontWeight: 700,
+                    fontSize: 13,
                     color: 'var(--muted)',
-                    background: 'rgba(255,255,255,0.07)',
-                    border: '1px solid var(--border)',
-                    borderRadius: 20,
-                    padding: '3px 10px',
-                    letterSpacing: '0.05em',
-                    textTransform: 'uppercase' as const,
-                    flexShrink: 0,
+                    marginBottom: 14,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
                   }}
                 >
-                  Скоро
-                </span>
+                  Почему: {activePersonalTrial.why}
+                </p>
+
+                {/* Chips */}
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <span
+                    style={{
+                      fontSize: 12, fontWeight: 600,
+                      color: 'var(--muted)',
+                      background: 'rgba(255,255,255,0.06)',
+                      border: '1px solid var(--border)',
+                      borderRadius: 20, padding: '3px 10px',
+                    }}
+                  >
+                    {PERSONAL_TRIAL_INTENSITY_LABELS[activePersonalTrial.intensity]}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: 12, fontWeight: 600,
+                      color: 'var(--muted)',
+                      background: 'rgba(255,255,255,0.06)',
+                      border: '1px solid var(--border)',
+                      borderRadius: 20, padding: '3px 10px',
+                    }}
+                  >
+                    {PERSONAL_TRIAL_MINUTES_LABELS[activePersonalTrial.daily_minutes]}
+                  </span>
+                </div>
+
+                <AbandonPersonalTrialButton />
               </div>
-              <p style={{ fontSize: 14, color: 'var(--muted)', lineHeight: 1.55 }}>
-                Создай свой личный вызов. Он войдёт в Легенду после завершения.
-              </p>
-            </div>
+            ) : (
+              /* ── Empty state ── */
+              <div
+                style={{
+                  background: 'var(--surface)',
+                  borderRadius: 12,
+                  padding: '18px 16px',
+                  border: '1px solid var(--border)',
+                }}
+              >
+                <p style={{ fontSize: 14, color: 'var(--muted)', lineHeight: 1.55, marginBottom: 14 }}>
+                  Создай свой личный вызов — свою цель на любой срок. Он войдёт в Легенду.
+                </p>
+                <a
+                  href="/personal-trial/new"
+                  style={{
+                    display: 'inline-block',
+                    padding: '10px 20px',
+                    borderRadius: 10,
+                    background: 'var(--accent)',
+                    color: '#fff',
+                    fontSize: 14,
+                    fontWeight: 600,
+                    textDecoration: 'none',
+                  }}
+                >
+                  Создать испытание
+                </a>
+              </div>
+            )}
           </div>
 
           {/* ─── Челленджи Solo Level ─── */}
