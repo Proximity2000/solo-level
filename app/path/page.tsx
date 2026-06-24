@@ -20,10 +20,13 @@ export default async function PathPage() {
 
   if (!stats) redirect('/auth')
 
+  // UTC-anchored today (same formula as completeMission server action)
+  const todayStr = new Date().toISOString().slice(0, 10)
+
   // daily_log за последние 90 дней
-  const since = new Date()
-  since.setDate(since.getDate() - 89)
-  const sinceStr = since.toISOString().split('T')[0]
+  const since = new Date(`${todayStr}T00:00:00.000Z`)
+  since.setUTCDate(since.getUTCDate() - 89)
+  const sinceStr = since.toISOString().slice(0, 10)
 
   const { data: logs } = await supabase
     .from('daily_log')
@@ -127,7 +130,7 @@ export default async function PathPage() {
             >
               Последние 90 дней
             </p>
-            <PathCalendar logs={typedLogs} days={90} />
+            <PathCalendar logs={typedLogs} days={90} todayStr={todayStr} />
           </div>
         </div>
       </div>

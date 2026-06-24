@@ -10,6 +10,7 @@ interface DayEntry {
 interface PathCalendarProps {
   logs: { date: string; result: DayResult }[]
   days?: number
+  todayStr: string  // YYYY-MM-DD, UTC, passed from server
 }
 
 // Цвет клетки по результату дня
@@ -34,23 +35,22 @@ function dayLabel(result: DayResult | null): string {
   }
 }
 
-export default function PathCalendar({ logs, days = 90 }: PathCalendarProps) {
+export default function PathCalendar({ logs, days = 90, todayStr }: PathCalendarProps) {
   // Строим карту date → result
   const logMap = new Map<string, DayResult>()
   for (const log of logs) {
     logMap.set(log.date, log.result)
   }
 
-  // Генерируем массив дат: от (сегодня - days + 1) до сегодня
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const todayStr = today.toISOString().split('T')[0]
+  // UTC-anchored anchor — no local timezone arithmetic
+  const todayUtc = new Date(`${todayStr}T00:00:00.000Z`)
 
+  // Генерируем массив дат: от (сегодня - days + 1) до сегодня
   const entries: DayEntry[] = []
   for (let i = days - 1; i >= 0; i--) {
-    const d = new Date(today)
-    d.setDate(today.getDate() - i)
-    const dateStr = d.toISOString().split('T')[0]
+    const d = new Date(todayUtc)
+    d.setUTCDate(todayUtc.getUTCDate() - i)
+    const dateStr = d.toISOString().slice(0, 10)
     entries.push({
       date: dateStr,
       result: logMap.get(dateStr) ?? null,
@@ -58,7 +58,7 @@ export default function PathCalendar({ logs, days = 90 }: PathCalendarProps) {
   }
 
   // Заполняем пустые дни в начале до полной недели (Пн — первый день)
-  const firstDayOfWeek = new Date(entries[0].date).getDay() // 0=Вс
+  const firstDayOfWeek = new Date(`${entries[0].date}T00:00:00.000Z`).getUTCDay() // 0=Вс
   // Смещение: хотим Пн=0, Вс=6
   const offset = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1
   const paddingDays: DayEntry[] = Array.from({ length: offset }, (_, i) => ({
