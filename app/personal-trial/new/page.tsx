@@ -10,12 +10,12 @@ export default async function NewPersonalTrialPage() {
   } = await supabase.auth.getUser()
   if (!user) redirect('/auth')
 
-  // Redirect if an active personal trial already exists
+  // Redirect if a draft or active personal trial already exists
   const { data: existing } = await supabase
     .from('personal_trials')
-    .select('id')
+    .select('id, status')
     .eq('user_id', user.id)
-    .eq('status', 'active')
+    .in('status', ['draft', 'active'])
     .maybeSingle()
 
   if (existing) redirect('/personalization')

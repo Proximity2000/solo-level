@@ -141,21 +141,30 @@ export interface OfficialTrialTrophy {
 }
 
 // TABLE: personal_trials
-export type PersonalTrialIntensity = 'soft' | 'medium' | 'focused'
-export type PersonalTrialStatus   = 'active' | 'completed' | 'abandoned'
+export type PersonalTrialIntensity  = 'soft' | 'medium' | 'focused'
+export type PersonalTrialStatus     = 'draft' | 'active' | 'completed' | 'abandoned'
+export type PersonalTrialCategory   = 'routine' | 'learning' | 'fitness' | 'focus' | 'finance' | 'project' | 'custom'
+export type PersonalTrialPlanStatus = 'draft' | 'generating' | 'ready' | 'failed'
 
 export interface PersonalTrial {
-  id:            string
-  user_id:       string
-  title:         string
-  why:           string
-  daily_minutes: number
-  intensity:     PersonalTrialIntensity
-  status:        PersonalTrialStatus
-  started_at:    string
-  completed_at:  string | null
-  created_at:    string
-  updated_at:    string
+  id:                   string
+  user_id:              string
+  title:                string
+  why:                  string
+  daily_minutes:        number | null       // null until draft is activated
+  intensity:            PersonalTrialIntensity | null  // null until draft is activated
+  status:               PersonalTrialStatus
+  started_at:           string
+  completed_at:         string | null
+  created_at:           string
+  updated_at:           string
+  // v2 draft fields (null for v1 rows)
+  category:             PersonalTrialCategory | null
+  questionnaire:        Record<string, string> | null  // { question_id: chosen_option }
+  plan_status:          PersonalTrialPlanStatus | null
+  plan_generated_at:    string | null
+  generation_attempts:  number
+  regeneration_used:    boolean
 }
 
 export const PERSONAL_TRIAL_INTENSITY_LABELS: Record<PersonalTrialIntensity, string> = {

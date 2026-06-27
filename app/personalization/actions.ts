@@ -116,6 +116,114 @@ export async function createPersonalTrial(
   return { success: true }
 }
 
+// ── createDraftPersonalTrial ─────────────────────────────────
+
+export type CreateDraftPersonalTrialInput = {
+  title:        string
+  why:          string
+  category:     string
+  questionnaire: Record<string, string>
+}
+
+export type CreateDraftPersonalTrialResult =
+  | { success: true; id: string }
+  | { error: string }
+
+export async function createDraftPersonalTrial(
+  input: CreateDraftPersonalTrialInput
+): Promise<CreateDraftPersonalTrialResult> {
+  const supabase = await createClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) redirect('/auth')
+
+  // Reject if a draft already exists (partial unique index also enforces this)
+  const { data: existingDraft } = await supabase
+    .from('personal_trials')
+    .select('id')
+    .eq('user_id', user.id)
+    .eq('status', 'draft')
+    .maybeSingle()
+
+  if (existingDraft) {
+    return { error: 'У тебя уже есть черновик испытания.' }
+  }
+
+  // Reject if an active trial already exists
+  const { data: existingActive } = await supabase
+    .from('personal_trials')
+    .select('id')
+    .eq('user_id', user.id)
+    .eq('status', 'active')
+    .maybeSingle()
+
+  if (existingActive) {
+    return { error: 'У тебя уже есть активное личное испытание.' }
+  }
+
+  const { data: inserted, error: insertError } = await supabase
+    .from('personal_trials')
+    .insert({
+      user_id:      user.id,
+      title:        input.title.trim(),
+      why:          input.why.trim(),
+      category:     input.category,
+      questionnaire: input.questionnaire,
+      status:       'draft',
+      plan_status:  'draft',
+    })
+    .select('id')
+    .single()
+
+  if (insertError || !inserted) {
+    return { error: 'Не удалось сохранить черновик. Попробуй ещё раз.' }
+  }
+
+  return { success: true, id: inserted.id }
+}
+
+// ── cancelDraftPersonalTrial ─────────────────────────────────
+
+export type CancelDraftPersonalTrialResult =
+  | { success: true }
+  | { error: string }
+
+export async function cancelDraftPersonalTrial(): Promise<CancelDraftPersonalTrialResult> {
+  const supabase = await createClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) redirect('/auth')
+
+  // Triple-guarded: find draft owned by this user only
+  const { data: draft } = await supabase
+    .from('personal_trials')
+    .select('id')
+    .eq('user_id', user.id)
+    .eq('status', 'draft')
+    .maybeSingle()
+
+  if (!draft) {
+    return { error: 'Черновик не найден.' }
+  }
+
+  const { error: deleteError } = await supabase
+    .from('personal_trials')
+    .delete()
+    .eq('id', draft.id)
+    .eq('user_id', user.id)  // belt-and-suspenders
+    .eq('status', 'draft')   // belt-and-suspenders: never delete active/completed
+
+  if (deleteError) {
+    return { error: 'Не удалось удалить черновик. Попробуй ещё раз.' }
+  }
+
+  return { success: true }
+}
+
 // ── abandonPersonalTrial ─────────────────────────────────────
 
 export type AbandonPersonalTrialResult =

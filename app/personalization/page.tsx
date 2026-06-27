@@ -6,8 +6,10 @@ import { getEffectiveSmokingTrialDay } from '@/lib/smoking-trial'
 import { getSmokingTrialProgress } from '@/lib/smoking-trial-milestones'
 import AbandonTrialButton from './AbandonTrialButton'
 import AbandonPersonalTrialButton from './AbandonPersonalTrialButton'
+import CancelDraftPersonalTrialButton from './CancelDraftPersonalTrialButton'
 import type { OfficialTrial, PersonalTrial } from '@/lib/types'
 import { PERSONAL_TRIAL_INTENSITY_LABELS, PERSONAL_TRIAL_MINUTES_LABELS } from '@/lib/types'
+import { CATEGORY_LABELS, CATEGORY_EMOJI } from '@/lib/personal-trial-categories'
 
 export default async function PersonalizationPage() {
   const supabase = await createClient()
@@ -50,7 +52,7 @@ export default async function PersonalizationPage() {
 
   const trialProgress = getSmokingTrialProgress(effectiveTrialDay)
 
-  // Active personal trial
+  // Active personal trial (v1 rows)
   const { data: activePersonalTrialRaw } = await supabase
     .from('personal_trials')
     .select('*')
@@ -59,6 +61,18 @@ export default async function PersonalizationPage() {
     .maybeSingle()
 
   const activePersonalTrial = activePersonalTrialRaw as PersonalTrial | null
+
+  // Draft personal trial (v2 flow)
+  const { data: draftPersonalTrialRaw } = activePersonalTrial
+    ? { data: null }
+    : await supabase
+        .from('personal_trials')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('status', 'draft')
+        .maybeSingle()
+
+  const draftPersonalTrial = draftPersonalTrialRaw as PersonalTrial | null
 
   return (
     <div className="app-shell">
@@ -313,7 +327,7 @@ export default async function PersonalizationPage() {
             </p>
 
             {activePersonalTrial ? (
-              /* ── Active personal trial card ── */
+              /* ── v1 Active personal trial card ── */
               <div
                 style={{
                   background: 'var(--surface)',
@@ -343,33 +357,78 @@ export default async function PersonalizationPage() {
                   Почему: {activePersonalTrial.why}
                 </p>
 
-                {/* Chips */}
+                {/* Chips — null-guarded for v2 rows */}
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  <span
-                    style={{
-                      fontSize: 12, fontWeight: 600,
-                      color: 'var(--muted)',
-                      background: 'rgba(255,255,255,0.06)',
-                      border: '1px solid var(--border)',
-                      borderRadius: 20, padding: '3px 10px',
-                    }}
-                  >
-                    {PERSONAL_TRIAL_INTENSITY_LABELS[activePersonalTrial.intensity]}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: 12, fontWeight: 600,
-                      color: 'var(--muted)',
-                      background: 'rgba(255,255,255,0.06)',
-                      border: '1px solid var(--border)',
-                      borderRadius: 20, padding: '3px 10px',
-                    }}
-                  >
-                    {PERSONAL_TRIAL_MINUTES_LABELS[activePersonalTrial.daily_minutes]}
-                  </span>
+                  {activePersonalTrial.intensity && (
+                    <span
+                      style={{
+                        fontSize: 12, fontWeight: 600,
+                        color: 'var(--muted)',
+                        background: 'rgba(255,255,255,0.06)',
+                        border: '1px solid var(--border)',
+                        borderRadius: 20, padding: '3px 10px',
+                      }}
+                    >
+                      {PERSONAL_TRIAL_INTENSITY_LABELS[activePersonalTrial.intensity]}
+                    </span>
+                  )}
+                  {activePersonalTrial.daily_minutes != null && (
+                    <span
+                      style={{
+                        fontSize: 12, fontWeight: 600,
+                        color: 'var(--muted)',
+                        background: 'rgba(255,255,255,0.06)',
+                        border: '1px solid var(--border)',
+                        borderRadius: 20, padding: '3px 10px',
+                      }}
+                    >
+                      {PERSONAL_TRIAL_MINUTES_LABELS[activePersonalTrial.daily_minutes]}
+                    </span>
+                  )}
                 </div>
 
                 <AbandonPersonalTrialButton />
+              </div>
+            ) : draftPersonalTrial ? (
+              /* ── v2 Draft card ── */
+              <div
+                style={{
+                  background: 'var(--surface)',
+                  borderRadius: 12,
+                  padding: '18px 16px',
+                  border: '1px solid rgba(124,92,252,0.4)',
+                }}
+              >
+                <p style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 700, marginBottom: 4 }}>
+                  Черновик
+                </p>
+                <p style={{ fontSize: 16, fontWeight: 800, color: 'var(--text)', marginBottom: 8 }}>
+                  {draftPersonalTrial.title}
+                </p>
+                {draftPersonalTrial.category && (
+                  <p style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 14 }}>
+                    {CATEGORY_EMOJI[draftPersonalTrial.category]} {CATEGORY_LABELS[draftPersonalTrial.category]}
+                  </p>
+                )}
+                <p style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.55, marginBottom: 16 }}>
+                  Личный маршрут готовится. Скоро ты сможешь активировать испытание.
+                </p>
+                <a
+                  href={`/personal-trial/${draftPersonalTrial.id}/setup`}
+                  style={{
+                    display: 'inline-block',
+                    padding: '10px 20px',
+                    borderRadius: 10,
+                    background: 'var(--accent)',
+                    color: '#fff',
+                    fontSize: 14,
+                    fontWeight: 600,
+                    textDecoration: 'none',
+                  }}
+                >
+                  Продолжить создание
+                </a>
+                <CancelDraftPersonalTrialButton />
               </div>
             ) : (
               /* ── Empty state ── */
