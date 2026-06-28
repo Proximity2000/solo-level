@@ -210,14 +210,21 @@ export async function cancelDraftPersonalTrial(): Promise<CancelDraftPersonalTri
     return { error: 'Черновик не найден.' }
   }
 
-  const { error: deleteError } = await supabase
+  const { data: deleted, error: deleteError } = await supabase
     .from('personal_trials')
     .delete()
     .eq('id', draft.id)
     .eq('user_id', user.id)  // belt-and-suspenders
     .eq('status', 'draft')   // belt-and-suspenders: never delete active/completed
+    .select('id')
 
   if (deleteError) {
+    return { error: 'Не удалось удалить черновик. Попробуй ещё раз.' }
+  }
+
+  // Verify at least one row was actually deleted.
+  // Without a DELETE RLS policy, Supabase returns no error but deletes 0 rows.
+  if (!deleted || deleted.length === 0) {
     return { error: 'Не удалось удалить черновик. Попробуй ещё раз.' }
   }
 
